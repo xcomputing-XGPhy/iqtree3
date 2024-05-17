@@ -834,8 +834,10 @@ option(BUILD_LIB "Build IQ-TREE2 library" OFF)
 
 if (BUILD_LIB STREQUAL "ON")
     add_library(iqtree3
-        obsolete/parsmultistate.cpp
-        obsolete/parsmultistate.h
+    	libfunc/libiqtree2_fun.cpp
+    	libfunc/libiqtree2_fun.h
+    	libfunc/suppFunc.cpp
+    	libfunc/suppFunc.h
     )
 else()
     add_executable(iqtree3
