@@ -2398,15 +2398,25 @@ void computeInitialDist(Params &params, IQTree &iqtree) {
 void initializeParams(Params &params, IQTree &iqtree)
 {
 //    iqtree.setCurScore(-DBL_MAX);
+    cout << "enter initializeParams" << endl << flush;
     bool ok_tree = iqtree.root;
     if (iqtree.isSuperTreeUnlinked())
         ok_tree = ((PhyloSuperTree*)&iqtree)->front()->root;
     if (!ok_tree)
     {
         // compute initial tree
-        if (!params.compute_ml_tree_only) {
-            iqtree.computeInitialTree(params.SSE);
+        stringstream* ss = nullptr;
+        if (params.intree_str != "") {
+            ss = new stringstream(params.intree_str);
         }
+        if (!params.compute_ml_tree_only) {
+            if (iqtree.isTreeMix())
+                ((IQTreeMix*) &iqtree)->computeInitialTree(params.SSE);
+            else
+                iqtree.computeInitialTree(params.SSE, ss);
+        }
+        if (ss != nullptr)
+            delete ss;
     }
     ASSERT(iqtree.aln);
 
