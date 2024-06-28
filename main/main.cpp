@@ -135,7 +135,7 @@ void printCopyright(ostream &out) {
 #endif
 
 #ifdef IQ_TREE
-    out << endl 
+    out << endl
         << "Developed by Bui Quang Minh, Thomas Wong, Nhan Ly-Trong, Huaiyan Ren" << endl
         << "Contributed by Lam-Tung Nguyen, Dominik Schrempf, Chris Bielow," << endl
         << "Olga Chernomor, Michael Woodhams, Diep Thi Hoang, Heiko Schmidt" << endl << endl;
