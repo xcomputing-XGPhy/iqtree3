@@ -152,6 +152,38 @@ include_directories("${PROJECT_SOURCE_DIR}/yaml-cpp/include")
 include_directories(after system "/usr/local/include")
 
 ##################################################################
+# onnxruntime
+##################################################################
+option(USE_NN "Use neutual network (nn) with version 1.13 or later onnxruntime" OFF)
+option(USE_OLD_NN "Use neutual network (nn) with version 1.12 or before onnxruntime" OFF)
+
+if(USE_NN)
+    add_definitions(-D_NN)
+elseif(USE_OLD_NN)
+    add_definitions(-D_OLD_NN)
+endif()
+
+# Find onnxruntime library for machine learning
+if (USE_NN OR USE_OLD_NN)
+    if (onnxruntime_INCLUDE_DIRS)
+        add_definitions(-I${onnxruntime_INCLUDE_DIRS})
+    else()
+        find_package(onnxruntime)
+        if(onnxruntime_FOUND)
+            add_definitions(-I${onnxruntime_INCLUDE_DIRS})
+        endif()
+    endif()
+endif()
+
+if(USE_NN OR USE_OLD_NN)
+    if(NOT ONNXRUNTIME_ROOTDIR)
+        if(WIN32)
+            set(ONNXRUNTIME_ROOTDIR "C:/Program Files (x86)/onnxruntime")
+        endif()
+    endif()
+endif()
+
+##################################################################
 # Include the Terraphast library
 ##################################################################
 option(USE_TERRAPHAST "Use phylogentic terraces library (terraphast)" ON)
@@ -393,6 +425,10 @@ if (__ARM_NEON AND APPLE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Dthread_local=")
 endif()
 
+##################################################################
+# detect 32 or 64 bit binary
+##################################################################
+set (BINARY32 "FALSE")
 if(CMAKE_SIZEOF_VOID_P EQUAL 4 OR IQTREE_FLAGS MATCHES "m32")
     error("32-bit compilation is not supported")
 else()
@@ -467,14 +503,14 @@ if (NOT IQTREE_FLAGS MATCHES "single")
     	if(OSX_NATIVE_ARCHITECTURE STREQUAL "arm64")
     		link_directories(${PROJECT_SOURCE_DIR}/libmac_m1)
     	else()
-        link_directories(${PROJECT_SOURCE_DIR}/libmac)
-      endif()	
+    		link_directories(${PROJECT_SOURCE_DIR}/libmac)
+    	endif()
     elseif (UNIX AND NOT ${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
-      if (__ARM_NEON)
-        link_directories(${PROJECT_SOURCE_DIR}/liblinux_arm)
-      else()
-        link_directories(${PROJECT_SOURCE_DIR}/lib)
-      endif()
+    	if (__ARM_NEON)
+    		link_directories(${PROJECT_SOURCE_DIR}/liblinux_arm)
+    	else()
+    		link_directories(${PROJECT_SOURCE_DIR}/lib)
+    	endif()
     elseif (WIN32)
         link_directories(${PROJECT_SOURCE_DIR}/lib)
     endif()
@@ -749,6 +785,10 @@ add_subdirectory(tree)
 add_subdirectory(terrace)
 add_subdirectory(simulator)
 
+if (USE_NN OR USE_OLD_NN)
+add_subdirectory(nn)
+endif()
+
 if (USE_CMAPLE STREQUAL "ON")
 	SET(INSTALL_CMAPLE OFF CACHE BOOL "Disable installation of googletest" FORCE)
 	add_subdirectory(cmaple)
@@ -772,6 +812,10 @@ endif()
 if (USE_LSD2)
     add_subdirectory(lsd2)
 endif()
+
+##################################################################
+# the main executable
+##################################################################
 
 add_library(kernelsse tree/phylokernelsse.cpp)
 
@@ -848,6 +892,10 @@ if (NOT IQTREE_FLAGS MATCHES "avx" AND NOT IQTREE_FLAGS MATCHES "fma")
     endif()
 endif()
 
+if(USE_NN OR USE_OLD_NN)
+target_link_libraries(iqtree2 nn)
+endif()
+
 ##################################################################
 # setup linking flags
 ##################################################################
@@ -884,7 +932,22 @@ if (USE_CMAPLE_AA STREQUAL "ON")
 	target_link_libraries(iqtree2-aa pll ncl nclextra utils pda lbfgsb whtest sprng vectorclass model
     	gsl alignment tree simulator terrace yaml-cpp phyloYAML main-aa maple-aa ${PLATFORM_LIB} ${STD_LIB} ${THREAD_LIB} ${ATOMIC_LIB})
 endif()
-	
+
+# onnxruntime library
+if (USE_NN OR USE_OLD_NN)
+    if (onnxruntime_LIBRARIES)
+        target_link_libraries(iqtree2 ${onnxruntime_LIBRARIES})
+    else()
+        if (APPLE)
+            target_link_libraries(iqtree2 /usr/local/lib/libonnxruntime.dylib)
+        elseif(UNIX)
+            target_link_libraries(iqtree2 /usr/local/lib/libonnxruntime.so)
+        else()
+            target_link_libraries(iqtree2 onnxruntime)
+        endif()
+    endif()
+endif()
+
 if (USE_TERRAPHAST)
    target_link_libraries(iqtree2 terracetphast)
    if (USE_CMAPLE_AA STREQUAL "ON")

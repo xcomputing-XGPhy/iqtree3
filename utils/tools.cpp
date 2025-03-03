@@ -999,6 +999,78 @@ void readTaxaSets(char *filename, MSetsBlock *sets) {
     }
 }
 
+// Parse the profile mixture model
+// MIX{R+Fx} -> MIX{S+FO,S+FO,...,S+FO} with x classes and S is a linked substitution matrix (i.e. linked exchangeabilities)
+// OR R+Fx -> MIX{S+FO,S+FO,...,S+FO} with x classes and S is a linked substitution matrix (i.e. linked exchangeabilities)
+// and x < 1000
+// return true if it is a linked substitution matrix
+bool parseProfileMixModelStr(string& model_str) {
+    if (model_str.length() == 0)
+        return false;
+
+    string modelstr = model_str;
+    // change to upper character
+    transform(modelstr.begin(), modelstr.end(), modelstr.begin(), ::toupper);
+
+    int pos_mix = modelstr.find("MIX{");
+    if (pos_mix != string::npos) {
+        int pos_endBrac = modelstr.find_last_of('}');
+        if (pos_endBrac == string::npos || pos_endBrac < pos_mix+4) {
+            outError(modelstr + " is not in a correct format");
+        }
+        // get the substring inside MIX{....}
+        modelstr = modelstr.substr(pos_mix+4, pos_endBrac-pos_mix-4);
+    }
+
+    bool isLinkedSubst = false;
+    int pos_F = modelstr.find("+F");
+    if (pos_F != string::npos) {
+        int endpos = pos_F+2;
+        // get the end pos of the integer followed by +F
+        while (endpos < modelstr.length() && isdigit(modelstr[endpos]) && modelstr[endpos] != '.')
+            endpos++;
+        if (endpos >= modelstr.length() || (modelstr[endpos] == '+' || modelstr[endpos] == ',' || modelstr[endpos] == '}')) {
+            // Not an integer followed by a character like +F3X4
+            if (endpos > pos_F+2 && endpos-pos_F-2 < 4) {
+                // +Fx appears, where x is an integer, and x < 1000
+                int nclass = atoi(modelstr.substr(pos_F+2,endpos-pos_F-2).c_str());
+                if (nclass >= 1) {
+                    // this is R+Fx where x is an integer
+                    string s_model = modelstr.substr(0, pos_F);
+                    string RHAS = "";
+                    int pos_plus = modelstr.find("+",pos_F+2);
+                    if (pos_plus != string::npos) {
+                        RHAS = modelstr.substr(pos_plus);
+                    }
+                    string mix_model = "";
+                    if (nclass > 1) {
+                        mix_model.append("MIX{");
+                    }
+                    for (int i = 0; i < nclass; i++) {
+                        if (i > 0)
+                            mix_model.append(",");
+                        mix_model.append(s_model + "+FO");
+                    }
+                    if (nclass > 1)
+                        mix_model.append("}");
+                    mix_model.append(RHAS);
+                    model_str = mix_model;
+                    isLinkedSubst = true;
+                }
+            }
+        }
+    }
+    return isLinkedSubst;
+}
+
+// Parse the profile mixture model
+void parseProfileMix(Params& params) {
+    if (parseProfileMixModelStr(params.model_name))
+        params.optimize_linked_gtr = true;
+    if (parseProfileMixModelStr(params.model_joint))
+        params.optimize_linked_gtr = true;
+}
+
 void get2RandNumb(const int size, int &first, int &second) {
     // pick a random element
     first = random_int(size);
@@ -1036,8 +1108,8 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.min_size = 0;
     params.step_size = 1;
     params.find_all = false;
-    params.run_mode = DETECTED;
-    params.detected_mode = DETECTED;
+    params.run_mode = RunMode::DETECTED;
+    params.detected_mode = RunMode::DETECTED;
     params.param_file = NULL;
     params.initial_file = NULL;
     params.initial_area_file = NULL;
@@ -1171,6 +1243,7 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.stop_confidence = 0.95;
     params.num_runs = 1;
     params.model_name = "";
+    params.contain_nonrev = false;
     params.model_name_init = NULL;
     params.model_opt_steps = 10;
     params.model_set = "ALL";
@@ -1187,6 +1260,8 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.optimize_mixmodel_weight = false;
     params.optimize_rate_matrix = false;
     params.store_trans_matrix = false;
+    params.parallel_over_sites = false;
+    params.order_by_threads = false;
     //params.freq_type = FREQ_EMPIRICAL;
     params.freq_type = FREQ_UNKNOWN;
     params.keep_zero_freq = true;
@@ -1197,9 +1272,8 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.min_mix_cats = 1;
     params.max_mix_cats = 10;
     params.start_subst = "GTR+FO";
-    params.opt_rhas_again = true;
-    params.opt_qmix_method = 2;
-    params.opt_qmix_criteria = 1; // 1 : likelihood-ratio test; 2 : information criteria, like AIC, BIC
+    params.opt_rhas_again = false;
+    params.opt_qmix_criteria = 2; // 1 : likelihood-ratio test; 2 : information criteria, like AIC, BIC
     params.opt_qmix_pthres = 0.05;
     params.check_combin_q_mat = true;
     params.gamma_shape = -1.0;
@@ -1408,7 +1482,7 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.num_mixlen = 1;
     params.link_alpha = false;
     params.link_model = false;
-    params.model_joint = NULL;
+    params.model_joint = "";
     params.ignore_checkpoint = false;
     params.checkpoint_dump_interval = 60;
     params.force_unfinished = false;
@@ -1421,7 +1495,16 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.date_replicates = 0;
     params.clock_stddev = -1.0;
     params.date_outlier = -1.0;
-    
+    params.dating_mf = false;
+    params.mcmc_clock = CORRELATED;
+    params.mcmc_bds = "1,1,0.5";
+    params.mcmc_iter = "20000, 100, 20000";
+
+    // added by TD
+    params.use_nn_model = false;
+    params.nn_path_model = "resnet_modelfinder.onnx";
+    params.nn_path_rates = "lanfear_alpha_lstm.onnx";
+
     // ------------ Terrace variables ------------
     params.terrace_check = false;
     params.terrace_analysis = false;
@@ -1525,7 +1608,7 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.include_pre_mutations = false;
     params.mutation_file = "";
     params.site_starting_index = 0;
-    
+
     // store original params
     for (cnt = 1; cnt < argc; cnt++) {
         params.original_params = params.original_params + argv[cnt] + " ";
@@ -1652,7 +1735,6 @@ void parseArg(int argc, char *argv[], Params &params) {
                 params.optimize_alg_gammai = argv[cnt];
                 continue;
             }
-
             if (strcmp(argv[cnt], "-optalg_treeweight") == 0) {
                 cnt++;
                 if (cnt >= argc)
@@ -1685,6 +1767,7 @@ void parseArg(int argc, char *argv[], Params &params) {
             if (strcmp(argv[cnt], "--link-exchange-rates") == 0 || strcmp(argv[cnt], "--link-exchange") == 0) {
                 params.optimize_linked_gtr = true;
                 params.reset_method = "const";
+                params.optimize_alg_qmix = "EM";
                 continue;
             }
             if (strcmp(argv[cnt], "--gtr20-model") == 0 || strcmp(argv[cnt], "--init-exchange") == 0) {
@@ -1701,7 +1784,7 @@ void parseArg(int argc, char *argv[], Params &params) {
                     throw "Use --guess-multiplier <value>";
                 params.guess_multiplier = convert_double(argv[cnt]);
                 continue;
-            } 
+            }
 //            if (strcmp(argv[cnt], "--rates-file") == 0) {
 //                params.rates_file = true;
 //                continue;
@@ -1710,7 +1793,7 @@ void parseArg(int argc, char *argv[], Params &params) {
                 cnt++;
                 if (cnt >= argc)
                     throw "Use --reset-method <const/random>";
-                if(strcmp(argv[cnt], "const") != 0 && strcmp(argv[cnt], "random") != 0) 
+                if(strcmp(argv[cnt], "const") != 0 && strcmp(argv[cnt], "random") != 0)
                     throw "Invalid option for --reset-method : use 'const' or 'random'";
                 params.reset_method = argv[cnt];
                 continue;
@@ -1744,12 +1827,12 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 			if (strcmp(argv[cnt], "--greedy") == 0) {
-				params.run_mode = GREEDY;
+				params.run_mode = RunMode::GREEDY;
 				continue;
 			}
 			if (strcmp(argv[cnt], "-pr") == 0
 					|| strcmp(argv[cnt], "--pruning") == 0) {
-				params.run_mode = PRUNING;
+				params.run_mode = RunMode::PRUNING;
 				//continue; } if (strcmp(argv[cnt],"--both") == 0) {
 				//params.run_mode = BOTH_ALG;
 				continue;
@@ -1795,7 +1878,7 @@ void parseArg(int argc, char *argv[], Params &params) {
 				cnt++;
 				if (cnt >= argc)
 					throw "Use -dd <sample_size>";
-				params.run_mode = PD_DISTRIBUTION;
+				params.run_mode = RunMode::PD_DISTRIBUTION;
 				params.sample_size = convert_int(argv[cnt]);
 				continue;
 			}
@@ -1827,7 +1910,7 @@ void parseArg(int argc, char *argv[], Params &params) {
 			if (strcmp(argv[cnt], "-dist") == 0
 					|| strcmp(argv[cnt], "-d") == 0) {
 				// calculate distance matrix from the tree
-				params.run_mode = CALC_DIST;
+				params.run_mode = RunMode::CALC_DIST;
 				cnt++;
 				if (cnt >= argc)
 					throw "Use -dist <distance_file>";
@@ -2041,7 +2124,7 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 			if (strcmp(argv[cnt], "-exhaust") == 0) {
-				params.run_mode = EXHAUSTIVE;
+				params.run_mode = RunMode::EXHAUSTIVE;
 				continue;
 			}
 			if (strcmp(argv[cnt], "-seed") == 0 || strcmp(argv[cnt], "--seed") == 0) {
@@ -2189,7 +2272,7 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 			if (strcmp(argv[cnt], "-stats") == 0) {
-				params.run_mode = STATS;
+				params.run_mode = RunMode::STATS;
 				continue;
 			}
 			if (strcmp(argv[cnt], "-gbo") == 0) { //guided bootstrap
@@ -2238,11 +2321,11 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 			if (strcmp(argv[cnt], "-taxa") == 0) {
-				params.run_mode = PRINT_TAXA;
+				params.run_mode = RunMode::PRINT_TAXA;
 				continue;
 			}
 			if (strcmp(argv[cnt], "-area") == 0) {
-				params.run_mode = PRINT_AREA;
+				params.run_mode = RunMode::PRINT_AREA;
 				continue;
 			}
 			if (strcmp(argv[cnt], "-scale") == 0) {
@@ -2260,7 +2343,7 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 			if (strcmp(argv[cnt], "-scalebranch") == 0) {
-				params.run_mode = SCALE_BRANCH_LEN;
+				params.run_mode = RunMode::SCALE_BRANCH_LEN;
 				cnt++;
 				if (cnt >= argc)
 					throw "Use -scalebranch <scaling_factor>";
@@ -2268,7 +2351,7 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 			if (strcmp(argv[cnt], "-scalenode") == 0) {
-				params.run_mode = SCALE_NODE_NAME;
+				params.run_mode = RunMode::SCALE_NODE_NAME;
 				cnt++;
 				if (cnt >= argc)
 					throw "Use -scalenode <scaling_factor>";
@@ -2283,11 +2366,11 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 			if (strcmp(argv[cnt], "-lp") == 0) {
-				params.run_mode = LINEAR_PROGRAMMING;
+				params.run_mode = RunMode::LINEAR_PROGRAMMING;
 				continue;
 			}
 			if (strcmp(argv[cnt], "-lpbin") == 0) {
-				params.run_mode = LINEAR_PROGRAMMING;
+				params.run_mode = RunMode::LINEAR_PROGRAMMING;
 				params.binary_programming = true;
 				continue;
 			}
@@ -3262,11 +3345,17 @@ void parseArg(int argc, char *argv[], Params &params) {
                 params.model_opt_steps = convert_int(argv[cnt]);
                 continue;
             }
-			if (strcmp(argv[cnt], "-mset") == 0 || strcmp(argv[cnt], "--mset") == 0 || strcmp(argv[cnt], "--models") == 0 ) {
+            if (strcmp(argv[cnt], "--nonrev-model") == 0 || strcmp(argv[cnt], "-nonrev-model") == 0) {
+                params.contain_nonrev = true;
+                continue;
+            }
+			if (strcmp(argv[cnt], "-mset") == 0 || strcmp(argv[cnt], "--mset") == 0 || strcmp(argv[cnt], "--models") == 0 || strcmp(argv[cnt], "-mexchange") == 0 || strcmp(argv[cnt], "--mexchange") == 0 ) {
 				cnt++;
 				if (cnt >= argc)
-					throw "Use -mset <model_set>";
+					throw "Use " + string(argv[cnt-1]) + " <model_set>";
 				params.model_set = argv[cnt];
+                if (params.model_set == "non-reversible")
+                    params.contain_nonrev = true;
 				continue;
 			}
 			if (strcmp(argv[cnt], "-madd") == 0 || strcmp(argv[cnt], "--madd") == 0) {
@@ -3344,6 +3433,19 @@ void parseArg(int argc, char *argv[], Params &params) {
 				params.optimize_rate_matrix = true;
 				continue;
 			}
+            if (strcmp(argv[cnt], "-parallel-over-sites") == 0 || strcmp(argv[cnt], "--parallel-over-sites") == 0) {
+                params.parallel_over_sites = true;
+                continue;
+            }
+
+            // parallelization ordered by threads
+            if (strcmp(argv[cnt], "-parallel-order-thread") == 0 || strcmp(argv[cnt], "--parallel-order-thread") == 0) {
+                params.order_by_threads = true;
+                continue;
+            }
+
+
+
 //			if (strcmp(argv[cnt], "-mh") == 0) {
 //				params.mvh_site_rate = true;
 //				params.discard_saturated_site = false;
@@ -3561,8 +3663,8 @@ void parseArg(int argc, char *argv[], Params &params) {
                 int in_option = convert_int(argv[cnt]);
                 if (in_option < 0 || in_option > 1)
                     throw "Wrong option for -mrate-twice. Only 0 or 1 is allowed.";
-                if (in_option == 0)
-                    params.opt_rhas_again = false;
+                if (in_option == 1)
+                    params.opt_rhas_again = true;
                 continue;
             }
             if (strcmp(argv[cnt], "-lrt") == 0 || strcmp(argv[cnt], "--lrt") == 0) {
@@ -3570,10 +3672,15 @@ void parseArg(int argc, char *argv[], Params &params) {
                 if (cnt >= argc)
                     throw "Use -lrt <p-value threshold>";
                 params.opt_qmix_pthres = convert_double(argv[cnt]);
-                if (params.opt_qmix_pthres < 0.0 || params.opt_qmix_pthres > 1.0)
+                if (params.opt_qmix_pthres <= 0.0 || params.opt_qmix_pthres > 1.0) {
                     throw "Wrong p-value threshold for -opt_qmix_pthres. Must be between 0.0 and 1.0";
+                } else {
+                    params.opt_qmix_criteria = 1;
+                }
+                /*
                 if (params.opt_qmix_pthres == 0)
                     params.opt_qmix_criteria = 2; // using information critera instead of likelihood-ratio test for estimation of number of classes for Q-Mixture model
+                */
                 continue;
             }
 			if (strcmp(argv[cnt], "-a") == 0) {
@@ -4995,10 +5102,10 @@ void parseArg(int argc, char *argv[], Params &params) {
                             {
                                 // set the default model is yule harding
                                 params.tree_gen = YULE_HARDING;
-                                
+
                                 // set the number of taxa
                                 params.sub_size = convert_int(num_taxa_str.c_str());
-                                
+
                                 continue;
                             }
                             else
@@ -5278,10 +5385,10 @@ void parseArg(int argc, char *argv[], Params &params) {
                 continue;
             }
 
-            if (strcmp(argv[cnt], "--model-joint") == 0) {
+            if (strcmp(argv[cnt], "--model-joint") == 0 || strcmp(argv[cnt], "--link-partition") == 0) {
                 cnt++;
                 if (cnt >= argc)
-                    throw "Use --model-joint MODEL_NAME";
+                    throw "Use " + string(argv[cnt-1]) + " MODEL_NAME";
                 params.model_joint = argv[cnt];
                 params.link_model = true;
                 continue;
@@ -5368,11 +5475,15 @@ void parseArg(int argc, char *argv[], Params &params) {
             if (strcmp(argv[cnt], "--dating") == 0) {
                 cnt++;
                 if (cnt >= argc)
-                    throw "Use --dating LSD";
+                    throw "Use --dating LSD or --dating mcmctree";
                 params.dating_method = argv[cnt];
-                if (params.dating_method != "LSD")
-                    throw "Currently only LSD (least-square dating) method is supported";
-                continue;
+                if (params.dating_method != "LSD"){
+                    if (params.dating_method != "mcmctree"){
+                        throw "Currently only LSD (least-square dating) method or MCMCTree method is supported";
+                        continue;
+                    }
+
+                }
             }
 
             if (strcmp(argv[cnt], "--date") == 0) {
@@ -5472,6 +5583,76 @@ void parseArg(int argc, char *argv[], Params &params) {
                 params.dating_options = argv[cnt];
                 continue;
             }
+
+            if (strcmp(argv[cnt], "--mcmc-clock") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --mcmc-clock <EQUAL|IND|CORR>";
+                if (strcmp(argv[cnt], "EQUAL")==0)
+                {
+                    params.mcmc_clock = EQUAL_RATES;
+                }
+                else if (strcmp(argv[cnt], "IND")==0)
+                {
+                    params.mcmc_clock = INDEPENDENT;
+                }
+                else if (strcmp(argv[cnt], "CORR")==0)
+                {
+                    params.mcmc_clock = CORRELATED;
+                }else
+                {
+                    throw "Only equal rate, independent and correlated clock models are supported in MCMCtree";
+                }
+                continue;
+            }
+
+            if (strcmp(argv[cnt], "--mcmc-bds") == 0) {
+                cnt++;
+                params.mcmc_bds = argv[cnt];
+                StrVector mcmc_bds_vec;
+                convert_string_vec(params.mcmc_bds.c_str(), mcmc_bds_vec, ',');
+                if (mcmc_bds_vec.size()!=3 || !strcmp(mcmc_bds_vec[2].c_str(), ""))
+                {
+                    throw "three parameters should be set for birth-death model of MCMCtree (birth-rate, death-rate and sampling-fraction)";
+                }
+                continue;
+            }
+
+            if (strcmp(argv[cnt], "--mcmc-iter") == 0) {
+                cnt++;
+                params.mcmc_iter = argv[cnt];
+                StrVector mcmc_iter_vec;
+                convert_string_vec(params.mcmc_iter.c_str(), mcmc_iter_vec, ',');
+                if (mcmc_iter_vec.size()!=3  || !strcmp(mcmc_iter_vec[2].c_str(), ""))
+                {
+                    throw "three parameters should be set for MCMCtree dating (Burin, samplefreq and nsamples)";
+                }
+                continue;
+            }
+
+            // added by TD
+            // todo: give it a fancy name
+            if (strcmp(argv[cnt], "--use-nn-model") == 0) {
+                params.use_nn_model = true;
+                continue;
+            }
+
+            // added by TD
+            if (strcmp(argv[cnt], "--nn-path-model") == 0) {
+                cnt++;
+                params.nn_path_model = argv[cnt];
+                params.use_nn_model = true;
+                continue;
+            }
+
+            // added by TD
+            if (strcmp(argv[cnt], "--nn-path-rates") == 0) {
+                cnt++;
+                params.nn_path_rates = argv[cnt];
+                params.use_nn_model = true;
+                continue;
+            }
+
             if (arg=="-progress-bar" || arg=="--progress-bar" || arg=="-bar") {
                 progress_display::setProgressDisplay(true);
                 continue;
@@ -5495,10 +5676,10 @@ void parseArg(int argc, char *argv[], Params &params) {
                 
                 continue;
             }
-            
+
             if (strcmp(argv[cnt], "--index-from-one") == 0) {
                 params.site_starting_index = 1;
-                
+
                 continue;
             }
             
@@ -5625,21 +5806,21 @@ void parseArg(int argc, char *argv[], Params &params) {
                 if (cnt >= argc)
                     outError("Use -aln-format MAPLE, PHYLIP, FASTA, or AUTO");
                 params.in_aln_format_str = argv[cnt];
-                
+
                 continue;
             }
             if (strcmp(argv[cnt], "--tree-search") == 0 || strcmp(argv[cnt], "-tree-search") == 0) {
                 ++cnt;
                 if (cnt >= argc || argv[cnt][0] == '-')
                     outError("Use -tree-search <FAST|NORMAL|EXHAUSTIVE>");
-                
+
                 params.tree_search_type_str = argv[cnt];
                 continue;
             }
             if (strcmp(argv[cnt], "--shallow-tree-search") == 0 || strcmp(argv[cnt], "-shallow-search") == 0) {
-                
+
                 params.shallow_tree_search = true;
-                
+
             if (strcmp(argv[cnt], "--mutation") == 0 || strcmp(argv[cnt], "-mut") == 0) {
                 cnt++;
                 if (cnt >= argc)
@@ -5656,7 +5837,7 @@ void parseArg(int argc, char *argv[], Params &params) {
                 continue;
             }
             if (strcmp(argv[cnt], "--output-multifurcating-tree") == 0 || strcmp(argv[cnt], "-out-mul-tree") == 0) {
-                
+
                 params.tree_format_str = "MUL";
 
                 continue;
@@ -5665,16 +5846,16 @@ void parseArg(int argc, char *argv[], Params &params) {
                 params.make_consistent = true;
                 continue;
             }
-            
+
             if (argv[cnt][0] == '-') {
                 string err = "Invalid \"";
                 err += argv[cnt];
                 err += "\" option.";
                 throw err;
             } else {
-                if (params.user_file == NULL)
-                    params.user_file = argv[cnt];
-                else
+//                if (params.user_file == NULL)
+//                    params.user_file = argv[cnt];
+//                else
                     params.out_file = argv[cnt];
             }
         }
@@ -5710,7 +5891,7 @@ void parseArg(int argc, char *argv[], Params &params) {
         usage(argv, false);
 #endif
     }
-    
+
     if (params.treemix_optimize_methods.find("hmm")!=string::npos &&
         params.model_name.find("+T") != string::npos) {
         params.optimize_params_use_hmm = true;
@@ -5755,8 +5936,11 @@ void parseArg(int argc, char *argv[], Params &params) {
         outError("-b bootstrap option does not work with -S yet.");
 
     //added to remove situations where we're optimizing a linked rate matrix when we really shouldn't be -JD
-    if (params.optimize_linked_gtr && params.model_name.find("GTR") == string::npos) 
+    if (params.optimize_linked_gtr && params.model_name.find("GTR") == string::npos && params.model_joint.find("GTR") == string::npos)
         outError("Must have either GTR or GTR20 as part of the model when using --link-exchange-rates.");
+
+    if (params.use_nn_model && params.modelomatic)
+        outError("--modelomatic option does not work with --use-nn-model.");
 
     if (params.dating_method != "") {
     #ifndef USE_LSD2
@@ -5838,7 +6022,11 @@ void parseArg(int argc, char *argv[], Params &params) {
     {
         std::string sequence_type(params.sequence_type);
     }
-    
+
+    // parse the profile mixture model
+    // R+Fx -> MIX{S+FO,S+FO,...,S+FO} with x classes and S is a linked substitution matrix (i.e. linked exchangeabilities)
+    parseProfileMix(params);
+
     //    if (MPIHelper::getInstance().isWorker()) {
     // BUG: setting out_prefix this way cause access to stack, which is cleaned up after returning from this function
 //        string newPrefix = string(params.out_prefix) + "."  + NumberToString(MPIHelper::getInstance().getProcessID()) ;
@@ -5972,6 +6160,7 @@ void usage_alisim(){
     << "  User Manual is available at http://www.iqtree.org/doc/AliSim" << endl;
 }
 
+// TODO TD: add description for option use-nn-model
 void usage_iqtree(char* argv[], bool full_command) {
     printCopyright(cout);
     cout << "Usage: iqtree [-s ALIGNMENT] [-p PARTITION] [-m MODEL] [-t TREE] ..." << endl << endl;
@@ -6063,6 +6252,9 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "  --abayes             approximate Bayes test (Anisimova et al. 2011)" << endl
     << "  --lbp NUM            Replicates for fast local bootstrap probabilities" << endl
     << endl << "MODEL-FINDER:" << endl
+    << "  --use-nn-model       Use neural network for tree inference" << endl
+    << "  --nn-path-model      Neural network file for substitution model (onnx format)" << endl
+    << "  --nn-path-rates      Neural network file for alpha value (onnx format)" << endl
     << "  -m TESTONLY          Standard model selection (like jModelTest, ProtTest)" << endl
     << "  -m TEST              Standard model selection followed by tree inference" << endl
     << "  -m MF                Extended model selection with FreeRate heterogeneity" << endl
@@ -6235,8 +6427,8 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "                       divergence is low, otherwise, apply IQ-TREE algorithm." << endl
     << "  --pathogen-force     Apply CMAPLE tree search algorithm regardless" << endl
     << "                       of sequence divergence." << endl
-    
-    
+
+
     
 #ifdef USE_LSD2
     << endl << "TIME TREE RECONSTRUCTION:" << endl
