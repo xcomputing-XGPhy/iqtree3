@@ -2763,38 +2763,30 @@ void printMCMCFileFormat(PhyloTree *tree, MatrixXd &hessian, stringstream &tree_
                 counter++;
             }
             // here we check whether the first child of the partition tree is a leaf in the case of missing taxa.
-            if (leftSingle && counter==1 && (nei->link_neighbors[part_id]->node->neighbors.size()==1 || nei1->link_neighbors[part_id]->node->neighbors.size()==1))
-            {
+            if (leftSingle && counter == 1 && (nei->link_neighbors[part_id]->node->neighbors.size() == 1 || nei1->
+                link_neighbors[part_id]->node->neighbors.size() == 1)){
                 leftSingleRoot = true;
                 counter++;
             }
         }
         // Note: if we get an unrooted tree with left child is a leaf, we need to push it to back as the last branch
         // This is a special case in MCMCTree
-        if (leftSingleRoot)
-        {
+        if (leftSingleRoot){
             auto partBrM = partBrMmap.front();
             vector<pair<int, int>> partBrMapleftSingle;
             vector<pair<int, int>> partBrMmap2;
             int leftSinglePartId = partBrM.second;
 
-            for (auto it : partBrMmap)
-            {
-                if (it.second != leftSinglePartId)
-                {
+            for (auto it : partBrMmap){
+                if (it.second != leftSinglePartId){
                     partBrMmap2.emplace_back(it.first, it.second);
-                }
-                else
-                {
+                }else{
                     partBrMapleftSingle.emplace_back(it.first, it.second);
                 }
             }
-
-            for (auto it : partBrMapleftSingle)
-            {
+            for (auto it : partBrMapleftSingle){
                 partBrMmap2.emplace_back(it.first, it.second);
             }
-
             partBrMmap = partBrMmap2;
         }
         int numStates = tree->getModel()->num_states;
@@ -2811,21 +2803,20 @@ void printMCMCFileFormat(PhyloTree *tree, MatrixXd &hessian, stringstream &tree_
         auto *hessian_diagonal_part = aligned_alloc<double>(branchNum);
         memset(hessian_diagonal_part, 0, branchNum * sizeof(double));
 
-//        double *G_matrix_sub_tree = tree->G_matrix;
+        double *G_matrix_sub_tree = tree->G_matrix;
         if (superTree->params->partition_type != BRLEN_OPTIMIZE) {
             for (auto mapping: partBrMmap) {
                 int stree_branch_id = mapping.first;
                 int part_branch_id = mapping.second;
-                for (int i = 0; i < nPtn; i++) {
-                    G_matrix_part[stree_branch_id * nPtn + i] = tree->G_matrix[part_branch_id * nPtn + i];
-                }
-                //memcpy(G_matrix_part+(sizeof(double)*stree_branch_id*nPtn), G_matrix_sub_tree+sizeof(double)*(part_branch_id*nPtn), sizeof(double)*nPtn);
+                // for (int i = 0; i < nPtn; i++) {
+                //     G_matrix_part[stree_branch_id * nPtn + i] = tree->G_matrix[part_branch_id * nPtn + i];
+                // }
+                memmove(G_matrix_part+stree_branch_id*nPtn, G_matrix_sub_tree+part_branch_id*nPtn, sizeof(double)*nPtn);
                 gradient_vector_part[stree_branch_id] = tree->gradient_vector[part_branch_id];
                 hessian_diagonal_part[stree_branch_id] = tree->hessian_diagonal[part_branch_id];
             }
             saveTreeMCMCTree(branchLengths, branch_lengths_vector, tree, tree_stream);
         } else {
-
             DoubleVector branchLengths2;
             int branchCounter = 0;
             std::unordered_map<int, int> brVisitedMap;
@@ -2836,10 +2827,10 @@ void printMCMCFileFormat(PhyloTree *tree, MatrixXd &hessian, stringstream &tree_
                     continue;
                 }
                 brVisitedMap[part_branch_id] = 1;
-                for (int i = 0; i < nPtn; i++) {
-                    G_matrix_part[branchCounter * nPtn + i] = tree->G_matrix[part_branch_id * nPtn + i];
-                }
-                //memcpy(G_matrix_part+(sizeof(double)*stree_branch_id*nPtn), G_matrix_sub_tree+sizeof(double)*(part_branch_id*nPtn), sizeof(double)*nPtn);
+                // for (int i = 0; i < nPtn; i++) {
+                //     G_matrix_part[branchCounter * nPtn + i] = tree->G_matrix[part_branch_id * nPtn + i];
+                // }
+                memmove(G_matrix_part+branchCounter*nPtn, G_matrix_sub_tree+part_branch_id*nPtn, sizeof(double)*nPtn);
                 gradient_vector_part[branchCounter] = tree->gradient_vector[part_branch_id];
                 hessian_diagonal_part[branchCounter] = tree->hessian_diagonal[part_branch_id];
                 branchLengths2.push_back(branchLengths[part_branch_id]);
@@ -2847,7 +2838,6 @@ void printMCMCFileFormat(PhyloTree *tree, MatrixXd &hessian, stringstream &tree_
             }
             saveTreeMCMCTree(branchLengths2, branch_lengths_vector, tree, tree_stream);
         }
-
         processDervMCMCTree(gradient_vector_part, branchNum, nPtn, G_matrix_part, ptn_freq_diagonal,
                             gradient_vector_eigen, hessian, hessian_diagonal_part);
         aligned_free(G_matrix_part);
@@ -2858,7 +2848,6 @@ void printMCMCFileFormat(PhyloTree *tree, MatrixXd &hessian, stringstream &tree_
         processDervMCMCTree(tree->gradient_vector, nBranches, nPtn, tree->G_matrix, ptn_freq_diagonal,
                             gradient_vector_eigen, hessian, tree->hessian_diagonal);
         saveTreeMCMCTree(branchLengths, branch_lengths_vector, tree, tree_stream);
-
     }
 }
 
@@ -2883,7 +2872,6 @@ void printMCMCTreeCtlFile(IQTree *iqtree, ofstream &ctl, ofstream &dummyAlignmen
     } else {
         ndata = 1;
     }
-
     StrVector mcmc_iter_vec;
     convert_string_vec(Params::getInstance().mcmc_iter.c_str(), mcmc_iter_vec, ',');
     ctl << "seed = -1" << endl
@@ -3830,22 +3818,18 @@ void runTreeReconstruction(Params &params, IQTree* &iqtree) {
         iqtree->intermediateTrees.recomputeLoglOfAllTrees(*iqtree);
     }
     //check for dating with MCMCTree
-    if (params.dating_method == "mcmctree")
-    {
-
+    if (params.dating_method == "mcmctree"){
         cout << endl << "--- Generating the gradients and the Hessian for MCMCTree ---" << endl;
         if (iqtree->isSuperTree())
         {
             auto* stree = (PhyloSuperTree*)iqtree;
             int part_id = 0;
-            for (auto& it : *stree)
-            {
+            for (auto& it : *stree){
                 auto* partition_tree = (PhyloTree*)it;
                 bool leftSingleRoot = false;
 
                 // If we memorized the traversal starting node -> find the corresponding traversal starting node for the current partition
-                if (stree->traversal_starting_node)
-                {
+                if (stree->traversal_starting_node){
                     // it->sortTaxa();
                     auto nei = (SuperNeighbor*)(((Node*)stree->traversal_starting_node)->neighbors[0]->node)->
                         findNeighbor((Node*)stree->traversal_starting_node);
@@ -3860,10 +3844,8 @@ void runTreeReconstruction(Params &params, IQTree* &iqtree) {
                             leftSingleRoot = true;
                         }
                     }
-
                     // this is the other case where we don't miss any nodes at the root but a leaf at the root
-                    if (!leftSingleRoot && linked_super_nei->node->neighbors.size() == 1)
-                    {
+                    if (!leftSingleRoot && linked_super_nei->node->neighbors.size() == 1){
                         leftSingleRoot = true;
                     }
                     auto part_traversal_starting_nei = linked_super_nei->link_neighbors[part_id];
@@ -3876,8 +3858,7 @@ void runTreeReconstruction(Params &params, IQTree* &iqtree) {
                 doTimeTree(partition_tree);
             }
         }
-        else
-        {
+        else{
             doTimeTree(iqtree);
         }
         cout << "--- Completed the gradients and the Hessian generation ---" << endl;
