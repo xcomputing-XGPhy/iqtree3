@@ -405,8 +405,18 @@ double PartitionModel::computeMixLh(string &warning) {
                 }
             }
 
+            //compute log state frequencies
+            int n_states = tree2->getModel()->num_states;
+            double *state_freq = new double[n_states];
+            tree2->getModel()->getStateFrequency(state_freq);
+
+            vector<double> log_state_freq(n_states);
+            for (int n = 0; n < n_states; n++) {
+                log_state_freq[n] = log(state_freq[n]);
+            }
+
             // if the subset has less than 3 sequences, don't compute m-log-likelihood
-            if (inter_seqs_id.size() < 3) {
+            if (inter_seqs_id.size() < 3 && inter_seqs_id.size() > 1) {
 
 #ifdef _OPENMP
 #pragma omp critical
@@ -421,7 +431,30 @@ double PartitionModel::computeMixLh(string &warning) {
                             tree1_name + " and " + tree2_name + " show missing data in " +
                             to_string(ntaxa - inter_seqs_id.size()) + " sequences.";
                 }
+            } else if (inter_seqs_id.size() < 2) {
+                for (int l = 0; l < tree1_nsite; l++) {
+                    double site_lh = 0;
+                    Pattern p = tree1_aln->at(tree1_aln->getPatternID(l));
 
+                    for (string seq_name : tree1_seqs) {
+                        int missing_id = tree1_aln->getSeqID(seq_name);
+                        int char_id = p[missing_id];
+                        if (char_id < n_states) {
+                            site_lh += log_state_freq[char_id];
+                        } else {
+                            // compute ambiguous frequencies
+                            int cstate = char_id - n_states + 1;
+                            double amb_freq = 0;
+                            for (int m = 0; m < n_states; m++) {
+                                if ((cstate) & (1 << m)) {
+                                    amb_freq += state_freq[m];
+                                }
+                            }
+                            site_lh += log(amb_freq);
+                        }
+                    }
+                    lh_array[tree1_nsite * k + l] = site_lh;
+                }
             } else {
                 // subset tree1_aln
                 Alignment *sub_tree1_aln = NULL;
@@ -467,16 +500,6 @@ double PartitionModel::computeMixLh(string &warning) {
                 double *ptn_lh_array = new double [nptn];
                 sub_tree2->computeLikelihood(ptn_lh_array);
 
-                //compute log state frequencies
-                int n_states = sub_tree2->getModel()->num_states;
-                double *state_freq = new double[n_states];
-                sub_tree2->getModel()->getStateFrequency(state_freq);
-
-                vector<double> log_state_freq(n_states);
-                for (int n = 0; n < n_states; n++) {
-                    log_state_freq[n] = log(state_freq[n]);
-                }
-
                 //compute site log-likelihood
                 if (tree1_seqs.size() != inter_seqs_id.size()) { //for sequences only appears in tree1, calculate the state frequencies based on the model in tree2
                     for (int l = 0; l < tree1_nsite; l++) {
@@ -517,9 +540,8 @@ double PartitionModel::computeMixLh(string &warning) {
                 sub_tree2->aln = NULL;
                 delete sub_tree2;
                 delete[] ptn_lh_array;
-                delete[] state_freq;
             }
-
+            delete[] state_freq;
         }
 
         // compute partition log-likelihood from sites

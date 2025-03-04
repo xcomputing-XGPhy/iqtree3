@@ -822,7 +822,7 @@ void reportTree(ofstream &out, Params &params, PhyloTree &tree, double tree_lh, 
             computeInformationScores(mix_lh, df, ssize, mAIC, mAICc, mBIC);
 
             out << endl;
-            out << "Mixture-based log-likelihood of the tree: " << mix_lh << endl;
+            out << "Marginal log-likelihood of the tree: " << mix_lh << endl;
             out << "Marginal Akaike information criterion (mAIC) score: " << mAIC << endl;
             //out << "Marginal corrected Akaike information criterion (mAICc) score: " << mAICc << endl;
             //out << "Marginal Bayesian information criterion (mBIC) score: " << mBIC << endl;
