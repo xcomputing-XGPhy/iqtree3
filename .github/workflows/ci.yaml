@@ -110,7 +110,6 @@ jobs:
           set -x
           mkdir build
           cd build
-          export LDFLAGS="-L/usr/local/opt/libomp/lib"
           export CPPFLAGS="-I/usr/local/opt/libomp/include"
           export CXXFLAGS="-I/usr/local/opt/libomp/include"
           cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
@@ -142,7 +141,6 @@ jobs:
           set -x
           mkdir build
           cd build
-          export LDFLAGS="-L/opt/homebrew/opt/libomp/lib"
           export CPPFLAGS="-I/opt/homebrew/opt/libomp/include"
           export CXXFLAGS="-I/opt/homebrew/opt/libomp/include"
           cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
