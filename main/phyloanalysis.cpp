@@ -810,8 +810,7 @@ void reportTree(ofstream &out, Params &params, PhyloTree &tree, double tree_lh, 
         int ntrees; //mix_df;
         double mix_lh;
 
-        string maic_warning;
-        mix_lh = tree.getModelFactory()->computeMixLh(maic_warning);
+        mix_lh = tree.getModelFactory()->computeMarginalLh();
         if (mix_lh < 0) {
             PhyloSuperTree *stree = (PhyloSuperTree*) &tree;
             ntrees = stree->size();
@@ -828,7 +827,7 @@ void reportTree(ofstream &out, Params &params, PhyloTree &tree, double tree_lh, 
             //out << "Marginal Bayesian information criterion (mBIC) score: " << mBIC << endl;
         } else {
             out << endl;
-            out << maic_warning << endl;
+            out << "Warning: error in marginal Akaike information criterion (mAIC)" << endl;
         }
     }
 

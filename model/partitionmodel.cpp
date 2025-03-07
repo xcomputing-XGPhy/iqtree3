@@ -19,6 +19,7 @@
  ***************************************************************************/
 #include "partitionmodel.h"
 #include "alignment/superalignment.h"
+#include "alignment/alignmentpairwise.h"
 #include "model/rategamma.h"
 #include "model/modelmarkov.h"
 
@@ -335,7 +336,7 @@ double PartitionModel::targetFunk(double x[]) {
     return res;
 }
 
-double PartitionModel::computeMixLh(string &warning) {
+double PartitionModel::computeMarginalLh() {
     PhyloSuperTree *tree = (PhyloSuperTree*)site_rate->getTree();
     int ntrees = tree->size();
 
@@ -372,9 +373,8 @@ double PartitionModel::computeMixLh(string &warning) {
 
     // compute the mixture-based log-likelihood
     double mix_lh = 0.0;
-    bool too_much_missing = false;
 
-    for (int j = 0; j < ntrees && (!too_much_missing); j++) {
+    for (int j = 0; j < ntrees; j++) {
         //int i = tree->part_order[j];
         Alignment *tree1_aln = tree->at(j)->aln;
         int tree1_nsite = tree1_aln->getNSite();
@@ -415,47 +415,7 @@ double PartitionModel::computeMixLh(string &warning) {
                 log_state_freq[n] = log(state_freq[n]);
             }
 
-            // if the subset has less than 3 sequences, don't compute m-log-likelihood
-            if (inter_seqs_id.size() < 3 && inter_seqs_id.size() > 1) {
-
-#ifdef _OPENMP
-#pragma omp critical
-#endif
-                {
-                    too_much_missing = true;
-                    string tree1_name = tree1_aln->name;
-                    string tree2_name = tree2->aln->name;
-                    int ntaxa = tree->getNumTaxa();
-                    warning =
-                            "NOTE: Mixture-based log-likelihood conversion is skipped due to too much missing data: at least one of the partitions " +
-                            tree1_name + " and " + tree2_name + " show missing data in " +
-                            to_string(ntaxa - inter_seqs_id.size()) + " sequences.";
-                }
-            } else if (inter_seqs_id.size() < 2) {
-                for (int l = 0; l < tree1_nsite; l++) {
-                    double site_lh = 0;
-                    Pattern p = tree1_aln->at(tree1_aln->getPatternID(l));
-
-                    for (string seq_name : tree1_seqs) {
-                        int missing_id = tree1_aln->getSeqID(seq_name);
-                        int char_id = p[missing_id];
-                        if (char_id < n_states) {
-                            site_lh += log_state_freq[char_id];
-                        } else {
-                            // compute ambiguous frequencies
-                            int cstate = char_id - n_states + 1;
-                            double amb_freq = 0;
-                            for (int m = 0; m < n_states; m++) {
-                                if ((cstate) & (1 << m)) {
-                                    amb_freq += state_freq[m];
-                                }
-                            }
-                            site_lh += log(amb_freq);
-                        }
-                    }
-                    lh_array[tree1_nsite * k + l] = site_lh;
-                }
-            } else {
+            if (inter_seqs_id.size() > 2) {
                 // subset tree1_aln
                 Alignment *sub_tree1_aln = NULL;
                 if (tree1_seqs.size() != inter_seqs_id.size()) {
@@ -540,44 +500,162 @@ double PartitionModel::computeMixLh(string &warning) {
                 sub_tree2->aln = NULL;
                 delete sub_tree2;
                 delete[] ptn_lh_array;
+            } else if (inter_seqs_id.size() == 2) {
+                //AlignmentPairwise aln_pair(tree2, inter_seqs_id[0], inter_seqs_id[1]);
+                //double site_lh = aln_pair.computeFunction(1);
+
+                //compute the distance between the tree nodes of the two "overlapping" taxa
+                auto it = inter_seqs.begin();
+                string inter_seq1 = *it;
+                Node *node1 = tree2->findLeafName(inter_seq1);
+                ++it;
+                string inter_seq2 = *it;
+                Node *node2 = tree2->findLeafName(inter_seq2);
+                double branch_len = tree2->pairDist(node1, node2, node1);
+
+                //compute the transition probobility matrix based on tree2
+                RateHeterogeneity *site_rate = tree2->getRate();
+                int ncat = site_rate->getNDiscreteRate();
+                int trans_size = tree2->getModel()->getTransMatrixSize();
+                double *trans_matrix = new double[trans_size];
+                double *sum_trans_matrix = new double[trans_size];
+
+                if (tree2->getModelFactory()->site_rate->getGammaShape() == 0.0)
+                    tree2->getModelFactory()->computeTransMatrix(branch_len, sum_trans_matrix);
+                else {
+                    tree2->getModelFactory()->computeTransMatrix(branch_len * site_rate->getRate(0), sum_trans_matrix);
+                    for (int cat = 1; cat < ncat; cat++) {
+                        tree2->getModelFactory()->computeTransMatrix(branch_len * site_rate->getRate(cat), trans_matrix);
+                        for (int i = 0; i < trans_size; i++)
+                            sum_trans_matrix[i] += trans_matrix[i];
+                    }
+                }
+
+                // take the log for the transition probobility matrix
+                vector<double> log_sum_trans_matrix(trans_size);
+                for (int n = 0; n < trans_size; n++) {
+                    log_sum_trans_matrix[n] = log(sum_trans_matrix[n]);
+                }
+
+                for (int l = 0; l < tree1_nsite; l++) {
+                    double site_lh = 0.0;
+                    Pattern p = tree1_aln->at(tree1_aln->getPatternID(l));
+                    int state1 = p[inter_seqs_id[0]];
+                    int state2 = p[inter_seqs_id[1]];
+
+                    // compute the site log-likelihood of the two "overlaping" sequences.
+                    if (state1 < n_states && state2 < n_states) {
+                        site_lh = log_sum_trans_matrix[state1 * 4 + state2] + log_state_freq[state1];
+                        double a = site_lh;
+                    } else if (state1 >= n_states && state2 < n_states) {
+                        // compute ambiguous frequencies
+                        int cstate1 = state1 - n_states + 1;
+                        double amb_lh = 0.0;
+                        for (int m = 0; m < n_states; m++) {
+                            if ((cstate1) & (1 << m)) {
+                                amb_lh += log_sum_trans_matrix[m * 4 + state2] + log_state_freq[m];
+                            }
+                        }
+                        site_lh += amb_lh;
+                    } else if (state2 >= n_states && state1 < n_states) {
+                        // compute ambiguous frequencies
+                        int cstate2 = state2-n_states+1;
+                        double amb_lh = 0.0;
+                        for (int m = 0; m < n_states; m++) {
+                            if ((cstate2) & (1 << m)) {
+                                amb_lh += log_sum_trans_matrix[state1 * 4 + m] + log_state_freq[state1];
+                            }
+                        }
+                        site_lh += amb_lh;
+                    } else {
+                        // compute ambiguous frequencies
+                        int cstate1 = state1-n_states+1;
+                        int cstate2 = state2-n_states+1;
+                        double amb_lh = 0.0;
+                        for (int m = 0; m < n_states; m++) {
+                            for (int n = 0; n < n_states; n++)
+                                if (((cstate1) & (1 << m)) && ((cstate2) & (1 << n))) {
+                                    amb_lh += log_sum_trans_matrix[m * 4 + n] + log_state_freq[m];
+                                }
+                            }
+                            site_lh += amb_lh;
+                        }
+
+                    for (int missing_id: missing_seqs_id) {
+                        int char_id = p[missing_id];
+                        if (char_id  < n_states) {
+                            site_lh += log_state_freq[char_id];
+                        } else {
+                            // compute ambiguous frequencies
+                            int cstate = char_id-n_states+1;
+                            double amb_freq = 0;
+                            for (int m = 0; m < n_states; m++) {
+                                if ((cstate) & (1 << m)) {
+                                    amb_freq += state_freq[m];
+                                }
+                            }
+                            site_lh += log(amb_freq);
+                        }
+                    }
+                    lh_array[tree1_nsite * k + l] = site_lh;
+                }
+                delete[] trans_matrix;
+                delete[] sum_trans_matrix;
+            } else {
+                for (int l = 0; l < tree1_nsite; l++) {
+                    double site_lh = 0.0;
+                    Pattern p = tree1_aln->at(tree1_aln->getPatternID(l));
+
+                    for (string seq_name : tree1_seqs) {
+                        int missing_id = tree1_aln->getSeqID(seq_name);
+                        int char_id = p[missing_id];
+                        if (char_id < n_states) {
+                            site_lh += log_state_freq[char_id];
+                        } else {
+                            // compute ambiguous frequencies
+                            int cstate = char_id - n_states + 1;
+                            double amb_freq = 0;
+                            for (int m = 0; m < n_states; m++) {
+                                if ((cstate) & (1 << m)) {
+                                    amb_freq += state_freq[m];
+                                }
+                            }
+                            site_lh += log(amb_freq);
+                        }
+                    }
+                    lh_array[tree1_nsite * k + l] = site_lh;
+                }
             }
             delete[] state_freq;
         }
 
         // compute partition log-likelihood from sites
-        if (!too_much_missing){
-            double mix_lh_partition = 0.0;
-            for (int l = 0; l < tree1_nsite; l++) {
-                double weighted_lh, max_lh, mix_lh_site;
+        double mix_lh_partition = 0.0;
+        for (int l = 0; l < tree1_nsite; l++) {
+            double weighted_lh, max_lh, mix_lh_site;
+            //int ptn_freq = tree1_aln->at(l).frequency;
 
-                //int ptn_freq = tree1_aln->at(l).frequency;
-
-                for (int k = 0; k < ntrees; k++) {
-                    weighted_lh = log_weight_array[k]+lh_array[tree1_nsite*k+l];
-                    if (k == 0) {
-                        max_lh = weighted_lh;
-                    } else if (weighted_lh > max_lh) {
-                        max_lh = weighted_lh;
-                    }
+            for (int k = 0; k < ntrees; k++) {
+                weighted_lh = log_weight_array[k]+lh_array[tree1_nsite*k+l];
+                if (k == 0) {
+                    max_lh = weighted_lh;
+                } else if (weighted_lh > max_lh) {
+                    max_lh = weighted_lh;
                 }
-
-                double mix_lh_site_original = 0.0;
-                for (int k = 0; k < ntrees; k++) {
-                    mix_lh_site_original += exp(log_weight_array[k]+lh_array[tree1_nsite*k+l]-max_lh);
-                }
-                mix_lh_site = max_lh + log(mix_lh_site_original);
-                mix_lh_partition += mix_lh_site;
             }
-            mix_lh += mix_lh_partition;
+
+            double mix_lh_site_original = 0.0;
+            for (int k = 0; k < ntrees; k++) {
+                mix_lh_site_original += exp(log_weight_array[k]+lh_array[tree1_nsite*k+l]-max_lh);
+            }
+            mix_lh_site = max_lh + log(mix_lh_site_original);
+            mix_lh_partition += mix_lh_site;
         }
+        mix_lh += mix_lh_partition;
+
         delete[] lh_array; //release array memery
     }
-
-    if (too_much_missing){
-        return 1.0;
-    } else {
-        return mix_lh;
-    }
+    return mix_lh;
 }
 
 void PartitionModel::setVariables(double *variables) {
