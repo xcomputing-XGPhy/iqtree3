@@ -6668,6 +6668,7 @@ void optimiseQMixModel(Params &params, IQTree* &iqtree, ModelCheckpoint &model_i
     if (!iqtree->constraintTree.empty())
         new_iqtree->constraintTree.readConstraint(iqtree->constraintTree);
     new_iqtree->removed_seqs = iqtree->removed_seqs;
+    new_iqtree->traversal_starting_node = iqtree->traversal_starting_node;
     new_iqtree->twin_seqs = iqtree->twin_seqs;
     if (params.start_tree == STT_PLL_PARSIMONY || params.start_tree == STT_RANDOM_TREE || params.pll) {
         /* Initialized all data structure for PLL*/
