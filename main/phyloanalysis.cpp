@@ -3238,6 +3238,33 @@ void startTreeReconstruction(Params &params, IQTree* &iqtree, ModelCheckpoint &m
     runModelFinder(params, *iqtree, model_info, best_subst_name, best_rate_name, nest_network);
     
     optimiseQMixModel(params, iqtree, model_info);
+    
+    // if users want to perform tree dating (with mcmc)
+    // and if ModelFinder was run, the traversal starting node was incidently deleted (after copyTree and restoreCheckpoint)
+    // we have to delete tree nodes to force IQ-TREE to re-read the tree from the treefile
+    if (params.dating_method == "mcmctree" && params.dating_mf)
+    {
+        // if it's a supertree, delete all tree members
+        if (iqtree->isSuperTree())
+        {
+            PhyloSuperTree* stree = (PhyloSuperTree*) iqtree;
+            // delete member trees one by one
+            for (PhyloSuperTree::iterator it = stree->begin(); it != stree->end(); it++)
+            {
+                if ((*it)->root)
+                {
+                    (*it)->freeNode();
+                    (*it)->root = NULL;
+                }
+            }
+        }
+        // delete the tree itself
+        if (iqtree->root)
+        {
+            iqtree->freeNode();
+            iqtree->root = NULL;
+        }
+    }
 }
         
 /**
@@ -5085,11 +5112,6 @@ void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Ali
         alignment = NULL; // from now on use tree->aln instead
 
         startTreeReconstruction(params, tree, *model_info);
-        if (params.dating_method == "mcmctree" && params.dating_mf)
-        {
-            cout << "Initializing rooted tree again from input tree file for MCMCtree dating ..." << endl;
-            tree->computeInitialTree(params.SSE);
-        }
         // call main tree reconstruction
         if (params.num_runs == 1) {
             runTreeReconstruction(params, tree);
