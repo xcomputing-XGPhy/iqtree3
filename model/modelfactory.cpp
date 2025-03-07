@@ -512,7 +512,7 @@ ModelFactory::ModelFactory(Params &params, string &model_name, PhyloTree *tree, 
                 outError("Wrong close bracket position ", fstr);
             freq_type = FREQ_USER_DEFINED;
             freq_params = fstr.substr(3, close_bracket-3);
-        } else if ((fstr.length() >= 3 && (fstr.substr(0,3) == "+FC" || fstr.substr(0,3) == "+Fc")) || fstr == "+F") {
+        } else if (fstr == "+FC" || fstr == "+Fc" || fstr == "+F") {
             if (freq_type == FREQ_MIXTURE) {
                 freq_params = "empirical," + freq_params;
                 optimize_mixmodel_weight = true;
