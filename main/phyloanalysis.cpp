@@ -3336,7 +3336,6 @@ void runTreeReconstruction(Params &params, IQTree* &iqtree) {
         if (!iqtree->constraintTree.empty())
             iqtree_new->constraintTree.readConstraint(iqtree->constraintTree);
         iqtree_new->removed_seqs = iqtree->removed_seqs;
-        iqtree_new->traversal_starting_node = iqtree->traversal_starting_node;
         iqtree_new->twin_seqs = iqtree->twin_seqs;
         if (params.start_tree == STT_PLL_PARSIMONY || params.start_tree == STT_RANDOM_TREE || params.pll) {
             /* Initialized all data structure for PLL*/
