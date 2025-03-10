@@ -396,6 +396,8 @@ void ModelCodon::init(const char *model_name, string model_params, StateFreqType
     size_t pos;
 	if ((pos=name.find('_')) == string::npos) {
 		def_freq = initCodon(model_name, freq, true, freq_params);
+        if (freq == FREQ_USER_DEFINED && def_freq != FREQ_USER_DEFINED) // mechanistic model
+            freq = def_freq;
 	} else {
 		def_freq = initCodon(name.substr(0, pos).c_str(), freq, false, freq_params);
 		if (def_freq != FREQ_USER_DEFINED)
