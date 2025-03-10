@@ -25,15 +25,15 @@ ModelCodonMixture::ModelCodonMixture(string orig_model_name, string model_name,
         cmix_type = orig_model_name.substr(cmix_pos+5, end_pos-cmix_pos-5);
     string model_list;
     if (cmix_type == "1a") {
-        // M1a neural model with 2 classes
-        model_list = model_name + "," + model_name + "{1.0/1.0}";
+        // M1a neural model with 2 classes, omega2 = 1.0
+        model_list = model_name + "{<0.999}," + model_name + "{1.0}";
     } else if (cmix_type == "2a") {
         // M2a selection model with 3 classes
-        model_list = model_name + "," + model_name + "{1.0/1.0}," + model_name;
+        model_list = model_name + "{<0.999}," + model_name + "{1.0}," + model_name + "{>1.001}";
     } else if (cmix_type == "3") {
         // M3 model with 3 classes with no constraint
         model_list = model_name + "," + model_name + "," + model_name;
-    }    
+    }
     initMixture(orig_model_name, model_name, model_list, models_block,
                 freq, freq_params, tree, optimize_weights);
 }
