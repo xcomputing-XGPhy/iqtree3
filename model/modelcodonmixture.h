@@ -25,9 +25,6 @@ public:
     ModelCodonMixture(string orig_model_name, string model_name, ModelsBlock *models_block,
             StateFreqType freq, string freq_params, PhyloTree *tree, bool optimize_weights);
 
-    void initCodonMixture(int num_classes, string constraints, string model_name, ModelsBlock *models_block,
-            StateFreqType freq, string freq_params, PhyloTree *tree);
-
     /**
      * destructor
      */
@@ -36,6 +33,23 @@ public:
 private:
 
     bool link_kappa = true;
+
+protected:
+    /**
+        this function is served for the multi-dimension optimization. It should pack the model parameters
+        into a vector that is index from 1 (NOTE: not from 0)
+        @param variables (OUT) vector of variables, indexed from 1
+    */
+    virtual void setVariables(double *variables);
+
+    /**
+        this function is served for the multi-dimension optimization. It should assign the model parameters
+        from a vector of variables that is index from 1 (NOTE: not from 0)
+        @param variables vector of variables, indexed from 1
+        @return TRUE if parameters are changed, FALSE otherwise (2015-10-20)
+    */
+    virtual bool getVariables(double *variables);
+
     
 };
 

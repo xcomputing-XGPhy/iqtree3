@@ -24,40 +24,40 @@ ModelCodonMixture::ModelCodonMixture(string orig_model_name, string model_name,
     else
         cmix_type = orig_model_name.substr(cmix_pos+5, end_pos-cmix_pos-5);
     string model_list;
+    /* setting fix_kappa for class 2 and 3 */
     if (cmix_type == "1a") {
         // M1a neural model with 2 classes, omega2 = 1.0
-        model_list = model_name + "{<0.999}," + model_name + "{1.0}";
+        model_list = model_name + "{<0.999}," + model_name + "{1.0,1.0}";
     } else if (cmix_type == "2a") {
         // M2a selection model with 3 classes
-        model_list = model_name + "{<0.999}," + model_name + "{1.0}," + model_name + "{>1.001}";
+        model_list = model_name + "{<0.999}," + model_name + "{1.0,1.0}," + model_name + "{>1.001,1.0}";
     } else if (cmix_type == "3") {
         // M3 model with 3 classes with no constraint
-        model_list = model_name + "," + model_name + "," + model_name;
+        model_list = model_name + "{>0.001}," + model_name + "{>0.001,1.0}," + model_name + "{>0.001,1.0}";
+    } else {
+        outError("Unknown codon mixture " + orig_model_name.substr(cmix_pos));
     }
     initMixture(orig_model_name, model_name, model_list, models_block,
                 freq, freq_params, tree, optimize_weights);
 }
 
-void ModelCodonMixture::initCodonMixture(int num_classes, string constraints, string model_name,
-    ModelsBlock *models_block, StateFreqType freq, string freq_params,
-    PhyloTree *tree)
-{
-    int i;
-    for (i = 0; i < num_classes; i++) {
-        ModelCodon *model_codon =
-            (ModelCodon*)createModel(model_name, models_block,
-            freq_type, freq_params, tree);
-        push_back(model_codon);
-    }
-    auto nmixtures = size();
-    aligned_free(prop);
-    prop = aligned_alloc<double>(nmixtures);
-    for (i = 0; i < nmixtures; i++)
-        prop[i] = 1.0/i;
-}
-
-
 ModelCodonMixture::~ModelCodonMixture()
 {
     
+}
+
+bool ModelCodonMixture::getVariables(double *variables) {
+    ModelMixture::getVariables(variables);
+    auto kappa = ((ModelCodon*)at(0))->kappa;
+    auto kappa2 = ((ModelCodon*)at(0))->kappa2;
+    for (int i = 1; i < size(); i++) {
+        ModelCodon *model = (ModelCodon*)at(i);
+        model->kappa = kappa;
+        model->kappa2 = kappa2;
+    }
+}
+
+
+void ModelCodonMixture::setVariables(double *variables) {
+    ModelMixture::setVariables(variables);
 }
