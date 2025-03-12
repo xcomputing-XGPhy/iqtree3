@@ -2777,6 +2777,7 @@ void printMCMCFileFormat(PhyloTree *tree, MatrixXd &hessian, stringstream &tree_
             vector<pair<int, int>> partBrMmap2;
             int leftSinglePartId = partBrM.second;
 
+            // Note: multiples of same id could be mapped to the original tree
             for (auto it : partBrMmap){
                 if (it.second != leftSinglePartId){
                     partBrMmap2.emplace_back(it.first, it.second);
@@ -2839,9 +2840,50 @@ void printMCMCFileFormat(PhyloTree *tree, MatrixXd &hessian, stringstream &tree_
         aligned_free(hessian_diagonal_part);
 
     } else {
-        processDervMCMCTree(tree->gradient_vector, nBranches, nPtn, tree->G_matrix, ptn_freq_diagonal,
-                            gradient_vector_eigen, hessian, tree->hessian_diagonal);
-        saveTreeMCMCTree(branchLengths, branch_lengths_vector, tree, tree_stream);
+
+        int numStates = tree->getModel()->num_states;
+        size_t mem_size = get_safe_upper_limit(tree->getAlnNSite()) + max(get_safe_upper_limit(numStates),
+                                                                          get_safe_upper_limit(tree->getModelFactory()->unobserved_ptns.size()));
+        BranchVector singleAlnBranches;
+        tree->getBranches(singleAlnBranches);
+        vector<int> branch_ids;
+        for (Branch branch: singleAlnBranches){
+            auto nei = branch.first->findNeighbor(branch.second);
+            branch_ids.push_back(nei->id);
+        }
+        if (leftSingle){
+            int single_root = branch_ids.front();
+            branch_ids.erase(branch_ids.begin());
+            branch_ids.push_back(single_root);
+        }
+        size_t branchNum = tree->branchNum;
+        size_t g_matrix_size = branchNum * mem_size;
+        auto *G_matrix_new = aligned_alloc<double>(g_matrix_size);
+        memset(G_matrix_new, 0, g_matrix_size * sizeof(double));
+        auto *gradient_vector_new = aligned_alloc<double>(branchNum);
+        memset(gradient_vector_new, 0, branchNum * sizeof(double));
+        auto *hessian_diagonal_new = aligned_alloc<double>(branchNum);
+        memset(hessian_diagonal_new, 0, branchNum * sizeof(double));
+
+        double *G_matrix_tree = tree->G_matrix;
+        int br_counter = 0;
+        DoubleVector branchLengthsNew;
+        for (int  br_id: branch_ids) {
+            memmove(G_matrix_new+br_counter*nPtn, G_matrix_tree+br_id*nPtn, sizeof(double)*nPtn);
+            gradient_vector_new[br_counter] = tree->gradient_vector[br_id];
+            hessian_diagonal_new[br_counter] = tree->hessian_diagonal[br_id];
+            branchLengthsNew.push_back(branchLengths[br_id]);
+            br_counter++;
+        }
+
+
+        processDervMCMCTree(gradient_vector_new, nBranches, nPtn, G_matrix_new, ptn_freq_diagonal,
+                            gradient_vector_eigen, hessian, hessian_diagonal_new);
+        saveTreeMCMCTree(branchLengthsNew, branch_lengths_vector, tree, tree_stream);
+
+        aligned_free(G_matrix_new);
+        aligned_free(gradient_vector_new);
+        aligned_free(hessian_diagonal_new);
     }
 }
 
@@ -3043,24 +3085,25 @@ void printHessian(IQTree *iqtree, int partition_type) {
 
             // This is special case in MCMCtree: if the fist son of root has only one taxa, then select the next neighbour.
             if (traversal_starting_nei->node->neighbors.size() == 1){
-                traversal_starting_nei = (PhyloNeighbor*)((traversal_starting_nei->node)->findNeighbor(
-                    (traversal_starting_nei->node->neighbors[0]->node)));
-                iqtree->root = traversal_starting_nei->node;
-                // iqtree->sortTaxa();
+                iqtree->leftSingleRoot = true;
+                // traversal_starting_nei = (PhyloNeighbor*)((traversal_starting_nei->node)->findNeighbor(
+                //     (traversal_starting_nei->node->neighbors[0]->node)));
+                // iqtree->root = traversal_starting_nei->node;
+                // // iqtree->sortTaxa();
+                // // iqtree->initializeTree();
+                // NeighborVec neighbors = traversal_starting_nei->node->neighbors;
+                // auto nei1 = traversal_starting_nei->node->neighbors[0];
+                // auto nei2 = traversal_starting_nei->node->neighbors[1];
+                // auto nei3 = traversal_starting_nei->node->neighbors[2];
+                // traversal_starting_nei->node->neighbors[0] = nei2;
+                // traversal_starting_nei->node->neighbors[1] = nei3;
+                // traversal_starting_nei->node->neighbors[2] = nei1;
+                // // iqtree->sortTaxa();
                 // iqtree->initializeTree();
-                NeighborVec neighbors = traversal_starting_nei->node->neighbors;
-                auto nei1 = traversal_starting_nei->node->neighbors[0];
-                auto nei2 = traversal_starting_nei->node->neighbors[1];
-                auto nei3 = traversal_starting_nei->node->neighbors[2];
-                traversal_starting_nei->node->neighbors[0] = nei2;
-                traversal_starting_nei->node->neighbors[1] = nei3;
-                traversal_starting_nei->node->neighbors[2] = nei1;
-                // iqtree->sortTaxa();
-                iqtree->initializeTree();
             }
         }
 
-        printMCMCFileFormat(iqtree, hessian, tree_stream, branch_lengths_vector, gradient_vector_eigen);
+        printMCMCFileFormat(iqtree, hessian, tree_stream, branch_lengths_vector, gradient_vector_eigen, NULL, 0, iqtree->leftSingleRoot);
 
         outfile << endl << iqtree->aln->getNSeq() << endl << endl;
         outfile << tree_stream.str() << endl << endl;
