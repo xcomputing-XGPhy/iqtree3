@@ -1510,8 +1510,8 @@ void runModelFinder(Params &params, IQTree &iqtree, ModelCheckpoint &model_info,
     transferModelFinderParameters(&iqtree, orig_checkpoint);
     iqtree.setCheckpoint(orig_checkpoint);
 
-    // params.startCPUTime = cpu_time;
-    // params.start_real_time = real_time;
+    params.startCPUTime = cpu_time;
+    params.start_real_time = real_time;
     cpu_time = getCPUTime() - cpu_time;
     real_time = getRealTime() - real_time;
     cout << endl;
