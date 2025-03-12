@@ -1088,6 +1088,8 @@ void parseArg(int argc, char *argv[], Params &params) {
     int cnt;
     progress_display::setProgressDisplay(false);
     verbose_mode = VB_MIN;
+    params.startCPUTime = getCPUTime();
+    params.start_real_time = getRealTime();
     params.tree_gen = NONE;
     params.user_file = NULL;
     params.constraint_tree_file = NULL;
