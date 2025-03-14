@@ -583,11 +583,18 @@ ModelFactory::ModelFactory(Params &params, string &model_name, PhyloTree *tree, 
             else
                 freq_type = FREQ_DNA_MK;
         } else {
-            // might be "+F####" where # are digits
-            try {
-                freq_type = parseStateFreqDigits(fstr.substr(2)); // throws an error if not in +F#### format
-            } catch (...) {
-                outError("Unknown state frequency type ",fstr);
+            // others, for example, fstr == +FC10pi1
+            NxsModel *freq_mod = models_block->findModel(fstr.substr(2));
+            if (freq_mod) {
+                freq_type = FREQ_USER_DEFINED;
+                freq_params = freq_mod->description;
+            } else {
+                // might be "+F####" where # are digits
+                try {
+                    freq_type = parseStateFreqDigits(fstr.substr(2)); // throws an error if not in +F#### format
+                } catch (...) {
+                    outError("Unknown state frequency type ",fstr);
+                }
             }
         }
 //          model_str = model_str.substr(0, posfreq);
