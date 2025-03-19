@@ -415,7 +415,7 @@ double PartitionModel::computeMarginalLh() {
                 log_state_freq[n] = log(state_freq[n]);
             }
 
-            if (inter_seqs_id.size() > 2) {
+            if (inter_seqs_id.size() > 1) {
                 // subset tree1_aln
                 Alignment *sub_tree1_aln = NULL;
                 if (tree1_seqs.size() != inter_seqs_id.size()) {
@@ -439,6 +439,34 @@ double PartitionModel::computeMarginalLh() {
                     sub_tree2->copyTree(tree2, inter_seqs_set);
                 } else {
                     sub_tree2->copyTree(tree2);
+                }
+
+                if (inter_seqs_id.size() == 2) {
+                    string gappy_seq = "gappy_seq";
+                    sub_tree1_aln->addSeqName(gappy_seq);
+
+                    for (size_t patt = 0; patt < sub_tree1_aln->size(); ++patt) {
+                        sub_tree1_aln->at(patt).push_back(sub_tree1_aln->STATE_UNKNOWN);
+                    }
+
+                    Node *inter_node = sub_tree2->newNode();
+                    Node *gappy_taxon = sub_tree2->newNode(-1, "gappy_seq");
+                    auto it = inter_seqs.begin();
+                    string inter_seq1 = *it;
+                    Node *node1 = sub_tree2->findLeafName(inter_seq1);
+                    Node *node2 = node1->neighbors[0]->node;
+                    double half_branch = node1->findNeighbor(node2)->length/2.0;
+
+                    node1->updateNeighbor(node2, inter_node, half_branch);
+                    node2->updateNeighbor(node1, inter_node, half_branch);
+                    inter_node->addNeighbor(node1, half_branch);
+                    inter_node->addNeighbor(node2, half_branch);
+
+                    inter_node->addNeighbor(gappy_taxon, 0);
+                    gappy_taxon->addNeighbor(inter_node, 0);
+                    sub_tree2->branchNum+= 2;
+                    sub_tree2->leafNum++;
+                    sub_tree2->nodeNum = 2 * sub_tree2->leafNum -2;
                 }
 
                 // link sub_tree2 and sub_tree1_aln
@@ -500,6 +528,7 @@ double PartitionModel::computeMarginalLh() {
                 sub_tree2->aln = NULL;
                 delete sub_tree2;
                 delete[] ptn_lh_array;
+                /*
             } else if (inter_seqs_id.size() == 2) {
                 //AlignmentPairwise aln_pair(tree2, inter_seqs_id[0], inter_seqs_id[1]);
                 //double site_lh = aln_pair.computeFunction(1);
@@ -601,6 +630,7 @@ double PartitionModel::computeMarginalLh() {
                 }
                 delete[] trans_matrix;
                 delete[] sum_trans_matrix;
+                 */
             } else {
                 for (int l = 0; l < tree1_nsite; l++) {
                     double site_lh = 0.0;
