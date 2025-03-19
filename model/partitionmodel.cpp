@@ -574,41 +574,44 @@ double PartitionModel::computeMarginalLh() {
 
                     // compute the site log-likelihood of the two "overlaping" sequences.
                     if (state1 < n_states && state2 < n_states) {
-                        site_lh = log_sum_trans_matrix[state1 * 4 + state2] + log_state_freq[state1];
-                        double a = site_lh;
+                        site_lh = log_sum_trans_matrix[state1 * n_states + state2] + log_state_freq[state1];
                     } else if (state1 >= n_states && state2 < n_states) {
                         // compute ambiguous frequencies
                         int cstate1 = state1 - n_states + 1;
                         double amb_lh = 0.0;
                         for (int m = 0; m < n_states; m++) {
                             if ((cstate1) & (1 << m)) {
-                                amb_lh += log_sum_trans_matrix[m * 4 + state2] + log_state_freq[m];
+                                amb_lh = sum_trans_matrix[m * n_states + state2] * state_freq[m];
+                                site_lh *= amb_lh;
                             }
                         }
-                        site_lh += amb_lh;
+                        site_lh = log(site_lh);
                     } else if (state2 >= n_states && state1 < n_states) {
                         // compute ambiguous frequencies
                         int cstate2 = state2-n_states+1;
                         double amb_lh = 0.0;
                         for (int m = 0; m < n_states; m++) {
                             if ((cstate2) & (1 << m)) {
-                                amb_lh += log_sum_trans_matrix[state1 * 4 + m] + log_state_freq[state1];
+                                amb_lh = sum_trans_matrix[state1 * n_states + m] * state_freq[state1];
+                                site_lh *= amb_lh;
                             }
                         }
-                        site_lh += amb_lh;
+                        site_lh = log(site_lh);
                     } else {
                         // compute ambiguous frequencies
                         int cstate1 = state1-n_states+1;
                         int cstate2 = state2-n_states+1;
                         double amb_lh = 0.0;
                         for (int m = 0; m < n_states; m++) {
-                            for (int n = 0; n < n_states; n++)
+                            for (int n = 0; n < n_states; n++) {
                                 if (((cstate1) & (1 << m)) && ((cstate2) & (1 << n))) {
-                                    amb_lh += log_sum_trans_matrix[m * 4 + n] + log_state_freq[m];
+                                    amb_lh = sum_trans_matrix[m * n_states + n] * state_freq[m];
+                                    site_lh *= amb_lh;
                                 }
                             }
-                            site_lh += amb_lh;
                         }
+                        site_lh = log(site_lh);
+                    }
 
                     for (int missing_id: missing_seqs_id) {
                         int char_id = p[missing_id];
