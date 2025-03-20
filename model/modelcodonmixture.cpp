@@ -47,7 +47,7 @@ ModelCodonMixture::~ModelCodonMixture()
 }
 
 bool ModelCodonMixture::getVariables(double *variables) {
-    ModelMixture::getVariables(variables);
+    bool changed = ModelMixture::getVariables(variables);
     auto kappa = ((ModelCodon*)at(0))->kappa;
     auto kappa2 = ((ModelCodon*)at(0))->kappa2;
     for (int i = 1; i < size(); i++) {
@@ -55,6 +55,7 @@ bool ModelCodonMixture::getVariables(double *variables) {
         model->kappa = kappa;
         model->kappa2 = kappa2;
     }
+    return changed;
 }
 
 
