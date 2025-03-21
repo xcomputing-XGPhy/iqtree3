@@ -340,6 +340,24 @@ double PartitionModel::computeMarginalLh() {
     PhyloSuperTree *tree = (PhyloSuperTree*)site_rate->getTree();
     int ntrees = tree->size();
 
+    // all partition sequence type should be same, either DNA or protein
+    SeqType seqtype = tree->at(0)->aln->seq_type;
+    if (seqtype != SEQ_DNA && seqtype != SEQ_PROTEIN) {
+        return 1.0;
+    }
+    for (int j = 1; j < ntrees; j++) {
+        if (tree->at(j)->aln->seq_type != seqtype) {
+            return 1.0;
+        }
+    }
+
+    // ambigious states may be used in the calculation
+    int ambi_aa[] = {
+            2, 3, //4+8, // B = N or D
+            5, 6, //32+64, // Z = Q or E
+            9, 10 //512+1024 // U = I or L
+    };
+
     // go through the number of sites of each partition to compute the class weights
     vector<double> weight_array, log_weight_array;
     double sum_sites = 0.0;
@@ -442,13 +460,15 @@ double PartitionModel::computeMarginalLh() {
                 }
 
                 if (inter_seqs_id.size() == 2) {
+                    // if only two seqs in the subset
+                    // add a gappy seq two the sub_aln
                     string gappy_seq = "gappy_seq";
                     sub_tree1_aln->addSeqName(gappy_seq);
-
                     for (size_t patt = 0; patt < sub_tree1_aln->size(); ++patt) {
                         sub_tree1_aln->at(patt).push_back(sub_tree1_aln->STATE_UNKNOWN);
                     }
 
+                    // add a taxa with 0 branch length to the sub_tree
                     Node *inter_node = sub_tree2->newNode();
                     Node *gappy_taxon = sub_tree2->newNode(-1, "gappy_seq");
                     auto it = inter_seqs.begin();
@@ -501,14 +521,24 @@ double PartitionModel::computeMarginalLh() {
                                 site_lh += log_state_freq[char_id];
                             } else {
                                 // compute ambiguous frequencies
-                                int cstate = char_id-n_states+1;
-                                double amb_freq = 0;
-                                for (int m = 0; m < n_states; m++) {
-                                    if ((cstate) & (1 << m)) {
-                                        amb_freq += state_freq[m];
+                                if (seqtype == SEQ_DNA) {
+                                    int cstate = char_id - n_states + 1;
+                                    double amb_freq = 0;
+                                    for (int m = 0; m < n_states; m++) {
+                                        if ((cstate) & (1 << m)) {
+                                            amb_freq += state_freq[m];
+                                        }
+                                    }
+                                    site_lh += log(amb_freq);
+                                } else if (seqtype == SEQ_PROTEIN) {
+                                    if (char_id < 23) {
+                                        int cstate = char_id - n_states;
+                                        double amb_freq = 0;
+                                        amb_freq += state_freq[ambi_aa[cstate*2]];
+                                        amb_freq += state_freq[ambi_aa[cstate*2+1]];
+                                        site_lh += log(amb_freq);
                                     }
                                 }
-                                site_lh += log(amb_freq);
                             }
                         }
                         lh_array[tree1_nsite * k + l] = site_lh;
@@ -646,14 +676,24 @@ double PartitionModel::computeMarginalLh() {
                             site_lh += log_state_freq[char_id];
                         } else {
                             // compute ambiguous frequencies
-                            int cstate = char_id - n_states + 1;
-                            double amb_freq = 0;
-                            for (int m = 0; m < n_states; m++) {
-                                if ((cstate) & (1 << m)) {
-                                    amb_freq += state_freq[m];
+                            if (seqtype == SEQ_DNA) {
+                                int cstate = char_id - n_states + 1;
+                                double amb_freq = 0;
+                                for (int m = 0; m < n_states; m++) {
+                                    if ((cstate) & (1 << m)) {
+                                        amb_freq += state_freq[m];
+                                    }
+                                }
+                                site_lh += log(amb_freq);
+                            } else if (seqtype == SEQ_PROTEIN) {
+                                if (char_id < 23) {
+                                    int cstate = char_id - n_states;
+                                    double amb_freq = 0;
+                                    amb_freq += state_freq[ambi_aa[cstate*2]];
+                                    amb_freq += state_freq[ambi_aa[cstate*2+1]];
+                                    site_lh += log(amb_freq);
                                 }
                             }
-                            site_lh += log(amb_freq);
                         }
                     }
                     lh_array[tree1_nsite * k + l] = site_lh;
