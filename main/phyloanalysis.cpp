@@ -827,7 +827,7 @@ void reportTree(ofstream &out, Params &params, PhyloTree &tree, double tree_lh, 
             //out << "Marginal Bayesian information criterion (mBIC) score: " << mBIC << endl;
         } else {
             out << endl;
-            out << "mAIC calculation is skipped because not all partition sequence types are same, or not either DNA or protein." << endl;
+            out << "mAIC calculation is skipped because not all partition sequence types are same" << endl;
         }
     }
 

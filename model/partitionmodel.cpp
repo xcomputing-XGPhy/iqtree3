@@ -342,9 +342,11 @@ double PartitionModel::computeMarginalLh() {
 
     // all partition sequence type should be same, either DNA or protein
     SeqType seqtype = tree->at(0)->aln->seq_type;
+    /*
     if (seqtype != SEQ_DNA && seqtype != SEQ_PROTEIN) {
         return 1.0;
     }
+     */
     for (int j = 1; j < ntrees; j++) {
         if (tree->at(j)->aln->seq_type != seqtype) {
             return 1.0;
@@ -417,7 +419,9 @@ double PartitionModel::computeMarginalLh() {
                 int seq_id = tree1_aln->getSeqID(seq_name);
                 if (tree2_seqs_set.find(seq_name) != tree2_seqs_set.end()) {
                     inter_seqs.insert(seq_name);
-                    inter_seqs_id.push_back(seq_id);
+                    if (seq_id >= 0) {
+                        inter_seqs_id.push_back(seq_id);
+                    }
                 } else {
                     missing_seqs_id.push_back(seq_id);
                 }
@@ -436,7 +440,7 @@ double PartitionModel::computeMarginalLh() {
             if (inter_seqs_id.size() > 1) {
                 // subset tree1_aln
                 Alignment *sub_tree1_aln = NULL;
-                if (tree1_seqs.size() != inter_seqs_id.size()) {
+                if (tree1_seqs.size() != inter_seqs.size()) {
                     sub_tree1_aln = new Alignment();
                     sub_tree1_aln->extractSubAlignment(tree1_aln, inter_seqs_id, 0);
                 } else {
@@ -453,8 +457,11 @@ double PartitionModel::computeMarginalLh() {
                 }
 
                 sub_tree2 = new PhyloTree();
-                if (tree2_seqs.size() != inter_seqs_id.size()) {
+                if (tree2_seqs.size() != inter_seqs.size()) {
                     sub_tree2->copyTree(tree2, inter_seqs_set);
+                    if (!tree2->getModel()->isReversible()) {
+                        sub_tree2->nodeNum = 2 * sub_tree2->leafNum -2;
+                    }
                 } else {
                     sub_tree2->copyTree(tree2);
                 }
@@ -509,7 +516,7 @@ double PartitionModel::computeMarginalLh() {
                 sub_tree2->computeLikelihood(ptn_lh_array);
 
                 //compute site log-likelihood
-                if (tree1_seqs.size() != inter_seqs_id.size()) { //for sequences only appears in tree1, calculate the state frequencies based on the model in tree2
+                if (tree1_seqs.size() != inter_seqs.size()) { //for sequences only appears in tree1, calculate the state frequencies based on the model in tree2
                     for (int l = 0; l < tree1_nsite; l++) {
                         int ptn_id = sub_tree1_aln->getPatternID(l);
                         double site_lh = ptn_lh_array[ptn_id];
@@ -551,7 +558,7 @@ double PartitionModel::computeMarginalLh() {
                 }
 
                 //release memory
-                if (tree1_seqs.size() != inter_seqs_id.size()) {
+                if (tree1_seqs.size() != inter_seqs.size()) {
                     delete sub_tree1_aln;
                 }
                 sub_tree2->setModelFactory(NULL);
