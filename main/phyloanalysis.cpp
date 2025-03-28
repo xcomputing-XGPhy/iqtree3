@@ -5178,6 +5178,15 @@ void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Ali
 
 void runPhyloAnalysis(Params &params, Checkpoint *checkpoint) {
     bool runCMapleAlg = false;
+    // if users want to compute SPRTA, enforce using CMAPLE
+    if (params.compute_SPRTA)
+    {
+        if (params.inference_alg != ALG_CMAPLE)
+        {
+            params.inference_alg = ALG_CMAPLE;
+            outWarning("Enforce using CMAPLE tree search algorithm for computing SPRTA.");
+        }
+    }
     // check and run CMaple algorithm (if users want to do so)
     if (params.inference_alg != ALG_IQ_TREE)
         runCMapleAlg = runCMaple(params);
