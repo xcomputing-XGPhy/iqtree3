@@ -5339,7 +5339,7 @@ bool runCMaple(Params &params)
             // Write tree file in NEXUS format (if computing SPRTA)
             if (params.compute_SPRTA)
             {
-                ofstream out = ofstream(output_treefile + ".nexus");
+                ofstream out = ofstream(output_treefile + ".nex");
                 out << tree.exportNexus(tree_format);
                 out.close();
             }
@@ -5367,7 +5367,7 @@ bool runCMaple(Params &params)
             std::cout << "Analysis results written to:" << std::endl;
             std::cout << "Maximum-likelihood tree:       " << output_treefile << std::endl;
             if (params.compute_SPRTA)
-                std::cout << "Tree in NEXUS format:      " << output_treefile + ".nexus" << std::endl;
+                std::cout << "Tree in NEXUS format:      " << output_treefile + ".nex" << std::endl;
             if (params.compute_SPRTA && params.out_alter_spr)
                 std::cout << "Meta data in TSV format:   " << output_treefile + ".tsv" << std::endl;
             std::cout << "Screen log file:               " << prefix + ".log" << std::endl << std::endl;
