@@ -5323,6 +5323,10 @@ bool runCMaple(Params &params)
                 // if users input a tree -> depend on the setting in params (false ~ don't allow replacing (by default)
                 if (input_treefile.length())
                     allow_replacing_ML_tree = params.allow_replace_input_tree;
+                
+                // if SPRTA was computed, don't allow changing tree topology
+                if (params.compute_SPRTA)
+                    allow_replacing_ML_tree = false;
 
                 tree.computeBranchSupport(params.num_threads, params.aLRT_replicates, 0.1, allow_replacing_ML_tree, out_stream);
 
