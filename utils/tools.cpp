@@ -3217,14 +3217,14 @@ void parseArg(int argc, char *argv[], Params &params) {
 
               continue;
             }
-            if (strcmp(argv[cnt], "--zero-branch-supp") == 0 ||
-                strcmp(argv[cnt], "-zero-branch-supp") == 0) {
+            if (strcmp(argv[cnt], "--sprta-zero-branch") == 0 ||
+                strcmp(argv[cnt], "-sprta-zero-branch") == 0) {
               params.SPRTA_zero_branches = true;
 
               continue;
             }
-            if (strcmp(argv[cnt], "--out-alter-spr") == 0 ||
-                strcmp(argv[cnt], "-out-alter-spr") == 0) {
+            if (strcmp(argv[cnt], "--sprta-other-places") == 0 ||
+                strcmp(argv[cnt], "-sprta-other-places") == 0) {
               params.out_alter_spr = true;
 
               continue;
@@ -6130,8 +6130,8 @@ void usage(char* argv[]) {
     cout << "                       of sequence divergence." << endl;
     cout << "  --alrt <num_rep>     Specify number of replicates to compute SH-aLRT." << endl;
     cout << "  --sprta              Compute SPRTA (DeMaio et al., 2024) branch supports." << endl;
-    cout << "  --zero-branch-supp   Compute SPRTA supports for zero-length branches." << endl;
-    cout << "  --out-alter-spr      Output alternative SPRs and their SPRTA supports." << endl;
+    cout << "  --sprta-zero-branch  Compute SPRTA supports for zero-length branches." << endl;
+    cout << "  --sprta-other-places Output alternative SPRs and their SPRTA supports." << endl;
     cout << "  -T <num_thread>      Specify number of threads used for computing" << endl;
     cout << "                       branch supports (SH-aLRT or SPRTA)." << endl;
     cout << endl;
@@ -6458,8 +6458,8 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "                       of sequence divergence." << endl
     << "  --alrt <num_rep>     Specify number of replicates to compute SH-aLRT." << endl
     << "  --sprta              Compute SPRTA (DeMaio et al., 2024) branch supports." << endl
-    << "  --zero-branch-supp   Compute SPRTA supports for zero-length branches." << endl
-    << "  --out-alter-spr      Output alternative SPRs and their SPRTA supports." << endl
+    << "  --sprta-zero-branch  Compute SPRTA supports for zero-length branches." << endl
+    << "  --sprta-other-places Output alternative SPRs and their SPRTA supports." << endl
     << "  -T <num_thread>      Specify number of threads used for computing" << endl
     << "                       branch supports (SH-aLRT or SPRTA)." << endl
 
