@@ -173,16 +173,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Artifacts
+      - name: Download Mac x86-64 Artifact
         uses: actions/download-artifact@v4
         with:
-          pattern: Mac *
-
+          name: Mac x86-64
+          path: x86
+        
+      - name: Download Mac Arm Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Mac Arm
+          path: arm
+    
       - name: Combine Artifacts
         run: |
           chmod +x test_scripts/make_universal.sh 
-          file1=`ls "Mac x86-64/iqtree*.zip"`
-          file2=`ls "Mac Arm/iqtree*.zip"`
+          file1=$(ls x86/iqtree*.zip)
+          file2=$(ls arm/iqtree*.zip)
           test_scripts/make_universal.sh "$file1" "$file2"
           
       - name: Upload Built Binary
