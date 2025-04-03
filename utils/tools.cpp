@@ -6548,31 +6548,32 @@ void usage_iqtree(char* argv[], bool full_command) {
 
 void quickStartGuide() {
     printCopyright(cout);
-    cout << "Command-line examples (replace 'iqtree2 ...' by actual path to executable):" << endl << endl
+    cout << "Command-line examples (replace 'iqtree3 ...' by actual path to executable):" << endl << endl
          << "1. Infer maximum-likelihood tree from a sequence alignment (example.phy)" << endl
          << "   with the best-fit model automatically selected by ModelFinder:" << endl
-         << "     iqtree2 -s example.phy" << endl << endl
+         << "     iqtree3 -s example.phy" << endl << endl
          << "2. Perform ModelFinder without subsequent tree inference:" << endl
-         << "     iqtree2 -s example.phy -m MF" << endl
+         << "     iqtree3 -s example.phy -m MF" << endl
          << "   (use '-m TEST' to resemble jModelTest/ProtTest)" << endl << endl
          << "3. Combine ModelFinder, tree search, ultrafast bootstrap and SH-aLRT test:" << endl
-         << "     iqtree2 -s example.phy --alrt 1000 -B 1000" << endl << endl
+         << "     iqtree3 -s example.phy --alrt 1000 -B 1000" << endl << endl
          << "4. Perform edge-linked proportional partition model (example.nex):" << endl
-         << "     iqtree2 -s example.phy -p example.nex" << endl
+         << "     iqtree3 -s example.phy -p example.nex" << endl
          << "   (replace '-p' by '-Q' for edge-unlinked model)" << endl << endl
          << "5. Find best partition scheme by possibly merging partitions:" << endl
-         << "     iqtree2 -s example.phy -p example.nex -m MF+MERGE" << endl
+         << "     iqtree3 -s example.phy -p example.nex -m MF+MERGE" << endl
          << "   (use '-m TESTMERGEONLY' to resemble PartitionFinder)" << endl << endl
          << "6. Find best partition scheme followed by tree inference and bootstrap:" << endl
-         << "     iqtree2 -s example.phy -p example.nex -m MFP+MERGE -B 1000" << endl << endl
+         << "     iqtree3 -s example.phy -p example.nex -m MFP+MERGE -B 1000" << endl << endl
 #ifdef _OPENMP
          << "7. Use 4 CPU cores to speed up computation: add '-T 4' option" << endl << endl
 #endif
          << "8. Polymorphism-aware model with HKY nucleotide model and Gamma rate:" << endl
-         << "     iqtree2 -s counts_file.cf -m HKY+P+G" << endl << endl
-         << "9. PoMo mixture with virtual popsize 5 and weighted binomial sampling:" << endl
-         << "     iqtree2 -s counts_file.cf -m \"MIX{HKY+P{EMP},JC+P}+N5+WB\"" << endl << endl
-         << "To show all available options: run 'iqtree2 -h'" << endl << endl
+         << "     iqtree3 -s counts_file.cf -m HKY+P+G" << endl << endl
+    // BQM: this example is too complicated
+//         << "9. PoMo mixture with virtual popsize 5 and weighted binomial sampling:" << endl
+//         << "     iqtree3 -s counts_file.cf -m \"MIX{HKY+P{EMP},JC+P}+N5+WB\"" << endl << endl
+         << "To show all available options: run 'iqtree3 -h'" << endl << endl
          << "Have a look at the tutorial and manual for more information:" << endl
          << "     http://www.iqtree.org" << endl << endl;
     exit(0);

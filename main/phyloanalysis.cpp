@@ -1825,7 +1825,7 @@ void reportPhyloAnalysis(Params &params, IQTree &tree, ModelCheckpoint &model_in
             
             cout<<"\n-------------------------------------------------------------------\n";
             cout<<"The --terrace option is currently not available. Please, perform terrace analysis in a separate run using the following command line:\n";
-            cout<<"iqtree2 --gentrius <tree_file> -s <aln_file> -p <part_info_file>\n";
+            cout<<"iqtree3 --gentrius <tree_file> -s <aln_file> -p <part_info_file>\n";
             cout<<"For more information refer to the manual.\n";
             cout<<"-------------------------------------------------------------------\n";
             
