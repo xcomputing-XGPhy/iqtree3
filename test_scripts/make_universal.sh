@@ -14,5 +14,5 @@ unzip $2
 mkdir $universalname
 mkdir $universalname/bin
 cp $intelname/*.* $universalname
-lipo -create -output $universalname/bin/iqtree2 $intelname/bin/iqtree2 $armname/bin/iqtree2
+lipo -create -output $universalname/bin/iqtree3 $intelname/bin/iqtree3 $armname/bin/iqtree3
 zip -vr $universalname.zip $universalname -x "*.DS_Store"
