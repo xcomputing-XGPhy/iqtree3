@@ -162,31 +162,31 @@ jobs:
           path: build/iqtree*.zip
           if-no-files-found: error
 
-  compile-mac-universal:
-    name: Mac OS Universal
-    runs-on: macos-14
-    needs:
-      - build-macos-x86_64
-      - build-macos-arm
-    
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          pattern: Mac *
-
-      - name: Combine Artifacts
-        run: lipo -create -output iqtree3 "Mac x86-64/iqtree3" "Mac Arm/iqtree3"
-
-      - name: Check Architectures
-        run: lipo -archs iqtree3
-
-      - name: Upload Built Binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mac Universal
-          path: iqtree3
-          if-no-files-found: error
+#   compile-mac-universal:
+#     name: Mac OS Universal
+#     runs-on: macos-14
+#     needs:
+#       - build-macos-x86_64
+#       - build-macos-arm
+#     
+#     steps:
+#       - name: Download Artifacts
+#         uses: actions/download-artifact@v4
+#         with:
+#           pattern: Mac *
+# 
+#       - name: Combine Artifacts
+#         run: lipo -create -output iqtree3 "Mac x86-64/iqtree3" "Mac Arm/iqtree3"
+# 
+#       - name: Check Architectures
+#         run: lipo -archs iqtree3
+# 
+#       - name: Upload Built Binary
+#         uses: actions/upload-artifact@v4
+#         with:
+#           name: Mac Universal
+#           path: iqtree3
+#           if-no-files-found: error
 
   build-windows-x86-64:
     name: Windows x86-64
