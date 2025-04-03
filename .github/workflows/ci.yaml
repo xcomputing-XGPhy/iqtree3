@@ -51,7 +51,9 @@ jobs:
         cd build
         cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DIQTREE_FLAGS=static -DCMAKE_C_COMPILER=$(which gcc-${{ matrix.gcc-version }}) -DCMAKE_CXX_COMPILER=$(which g++-${{ matrix.gcc-version }})
         make -j
+        make package
         file iqtree3 | grep x86-64
+        file iqtree*.tar.gz
 
     - name: Upload Built Binary
       # Only upload for one of the gcc & cmake tests
@@ -59,7 +61,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Linux x86-64
-        path: build/iqtree3
+        path: build/iqtree*.tar.gz
         if-no-files-found: error
 
   build-linux-aarch64:
@@ -83,13 +85,15 @@ jobs:
            cd build
            cmake .. -DIQTREE_FLAGS=static
            make -j
+           make package
            file iqtree3 | grep aarch64
+           file iqtree*.tar.gz
 
        - name: Upload Built Binary
          uses: actions/upload-artifact@v4
          with:
            name: Linux AArch64
-           path: build/iqtree3
+           path: build/iqtree*.tar.gz
            if-no-files-found: error
 
   build-macos-x86_64:
