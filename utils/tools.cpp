@@ -1611,6 +1611,11 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.include_pre_mutations = false;
     params.mutation_file = "";
     params.site_starting_index = 0;
+    
+    // ----------- SPRTA ----------
+    params.compute_SPRTA = false;
+    params.SPRTA_zero_branches = false;
+    params.out_alter_spr = false;
 
     // store original params
     for (cnt = 1; cnt < argc; cnt++) {
@@ -3229,6 +3234,24 @@ void parseArg(int argc, char *argv[], Params &params) {
             if (strcmp(argv[cnt], "-pathogen-force") == 0 || strcmp(argv[cnt], "--pathogen-force") == 0) {
                 params.inference_alg = ALG_CMAPLE;
                 continue;
+            }
+            if (strcmp(argv[cnt], "--sprta") == 0 ||
+                strcmp(argv[cnt], "-sprta") == 0) {
+              params.compute_SPRTA = true;
+
+              continue;
+            }
+            if (strcmp(argv[cnt], "--sprta-zero-branch") == 0 ||
+                strcmp(argv[cnt], "-sprta-zero-branch") == 0) {
+              params.SPRTA_zero_branches = true;
+
+              continue;
+            }
+            if (strcmp(argv[cnt], "--sprta-other-places") == 0 ||
+                strcmp(argv[cnt], "-sprta-other-places") == 0) {
+              params.out_alter_spr = true;
+
+              continue;
             }
             if (strcmp(argv[cnt], "--out-csv") == 0) {
                 params.output_format = FORMAT_CSV;
@@ -6136,12 +6159,6 @@ void usage(char* argv[]) {
     //	cout << "  -rep <times>        Repeat algorithm a number of times." << endl;
     //	cout << "  -noout              Print no output file." << endl;
     cout << endl;
-    cout << "OPTIONS FOR GENOMIC EPIDEMIOLOGICAL ANALYSES:" << endl;
-    cout << "  --pathogen           Apply CMAPLE tree search algorithm if sequence" << endl;
-    cout << "                       divergence is low, otherwise, apply IQ-TREE algorithm." << endl;
-    cout << "  --pathogen-force     Apply CMAPLE tree search algorithm regardless" << endl;
-    cout << "                       of sequence divergence." << endl;
-    cout << endl;
     //cout << "HIDDEN OPTIONS: see the source code file pda.cpp::parseArg()" << endl;
 
     exit(0);
@@ -6463,6 +6480,12 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "                       divergence is low, otherwise, apply IQ-TREE algorithm." << endl
     << "  --pathogen-force     Apply CMAPLE tree search algorithm regardless" << endl
     << "                       of sequence divergence." << endl
+    << "  --alrt <num_rep>     Specify number of replicates to compute SH-aLRT." << endl
+    << "  --sprta              Compute SPRTA (DeMaio et al., 2024) branch supports." << endl
+    << "  --sprta-zero-branch  Compute SPRTA supports for zero-length branches." << endl
+    << "  --sprta-other-places Output alternative SPRs and their SPRTA supports." << endl
+    << "  -T <num_thread>      Specify number of threads used for computing" << endl
+    << "                       branch supports (SH-aLRT or SPRTA)." << endl
 
 
     
