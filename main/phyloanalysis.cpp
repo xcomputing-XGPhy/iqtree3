@@ -83,14 +83,113 @@ extern "C" {
 
 void reportReferences(Params &params, ofstream &out) {
 
-    out << "To cite IQ-TREE please use:" << endl << endl
-    << "Bui Quang Minh, Heiko A. Schmidt, Olga Chernomor, Dominik Schrempf," << endl
-    << "Michael D. Woodhams, Arndt von Haeseler, and Robert Lanfear (2020)" << endl
-    << "IQ-TREE 2: New models and efficient methods for phylogenetic inference" << endl
-    << "in the genomic era. Mol. Biol. Evol., in press." << endl
-    << "https://doi.org/10.1093/molbev/msaa015" << endl << endl;
+    out << "To cite IQ-TREE 3 please use:" << endl << endl
+    << "Thomas K.F. Wong, Nhan Ly-Trong, Huaiyan Ren, Hector Banos, Andrew J. Roger," << endl
+    << "Edward Susko, Chris Bielow, Nicola De Maio, Nick Goldman, Matthew W. Hahn," << endl
+    << "Gavin Huttley, Robert Lanfear, Bui Quang Minh (2025)" << endl
+    << "IQ-TREE 3: Phylogenomic Inference Software using Complex Evolutionary Models." << endl
+    << "Submitted." << endl << endl;
+
+    out << "Please also cite the following paper(s) for the feature(s) that you used:" << endl << endl;
     
     bool modelfinder_only = false;
+    if (params.model_name.find("MIX") != string::npos && params.model_name.find("MIX{") == string::npos) {
+        out << "To cite MixtureFinder please use: " << endl << endl
+            << "Huaiyan Ren, Thomas KF Wong, Bui Quang Minh, Robert Lanfear (2025)" << endl
+            << "MixtureFinder: Estimating DNA Mixture Models for Phylogenetic Analyses." << endl
+            << "Molecular Biology and Evolution, 42:msae264." << endl
+            << "https://doi.org/10.1093/molbev/msae264" << endl << endl;
+    }
+
+    if (params.optimize_linked_gtr) {
+        out << "To cite GTRpmix please use: " << endl << endl
+            << "Hector Banos, Thomas KF Wong, Justin Daneau, Edward Susko, Bui Quang Minh," << endl
+            << "Robert Lanfear, Matthew W Brown, Laura Eme, Andrew J Roger (2025)" << endl
+            << "GTRpmix: A linked general-time reversible model for profile mixture models." << endl
+            << "Molecular Biology and Evolution, 92:msae174." << endl
+            << "https://doi.org/10.1093/molbev/msae174" << endl << endl;
+    }
+
+    if (params.inference_alg != ALG_IQ_TREE) {
+        out << "To cite CMAPLE please use: " << endl << endl
+            << "Nhan Ly-Trong, Chris Bielow, Nicola De Maio, Bui Quang Minh (2024)" << endl
+            << "CMAPLE: Efficient phylogenetic inference in the pandemic era." << endl
+            << "Molecular Biology and Evolution, 41:msae134." << endl
+            << "https://doi.org/10.1093/molbev/msae134" << endl << endl;
+    }
+
+    if (params.model_name.find("+T") != string::npos) {
+        out << "To cite the MAST model \"+T\" please use: " << endl << endl
+            << "Thomas KF Wong, Caitlin Cherryh, Allen G Rodrigo, Matthew W Hahn, Bui Quang Minh, Robert Lanfear (2024)" << endl
+            << "MAST: Phylogenetic Inference with Mixtures Across Sites and Trees." << endl
+            << "Systematic Biology, 73:375–391." << endl
+            << "https://doi.org/10.1093/sysbio/syae008" << endl << endl;
+    }
+
+    if (params.consensus_type == CT_ASSIGN_SUPPORT_EXTENDED) {
+        out << "To cite site/gene concordance factor please use: " << endl << endl
+            << "Yu K Mo, Robert Lanfear, Matthew W Hahn, Bui Quang Minh (2023)" << endl
+            << "Updated site concordance factors minimize effects of homoplasy and taxon sampling." << endl
+            << "Bioinformatics, 39:btac741." << endl
+            << "https://doi.org/10.1093/bioinformatics/btac741" << endl << endl;
+    }
+
+    if (params.alisim_active) {
+        out << "To cite AliSim please use: " << endl << endl
+            << "Nhan Ly-Trong, Giuseppe MJ Barca, Bui Quang Minh (2023)" << endl
+            << "AliSim-HPC: parallel sequence simulator for phylogenetics." << endl
+            << "Bioinformatics, 39:btad540." << endl
+            << "https://doi.org/10.1093/bioinformatics/btad540" << endl << endl;
+    }
+
+    if (params.model_joint != "" && params.model_joint.find("NONREV") == string::npos) {
+        out << "To cite QMaker for estimating protein Q matrix please use: " << endl << endl
+            << "Bui Quang Minh, Cuong Cao Dang, Le Sy Vinh, Robert Lanfear (2021)" << endl
+            << "QMaker: Fast and Accurate Method to Estimate Empirical Models of Protein Evolution." << endl
+            << "Systematic Biology, 70:1046–1060." << endl
+            << "https://doi.org/10.1093/sysbio/syab010" << endl << endl;
+    }
+
+    if (params.model_joint != "" && params.model_joint.find("NONREV") != string::npos) {
+        out << "To cite nQMaker for estimating non-reversible Q matrix please use: " << endl << endl
+            << "Cuong Cao Dang, Bui Quang Minh, Hanon McShea, Joanna Masel, Jennifer E James, Le Sy Vinh,   Robert Lanfear (2022)" << endl
+            << "nQMaker: Estimating Time Nonreversible Amino Acid Substitution Models." << endl
+            << "Systematic Biology, 71:1110–1123." << endl
+            << "https://doi.org/10.1093/sysbio/syac007" << endl << endl;
+    }
+
+    if (params.consensus_type == CT_ROOTSTRAP) {
+        out << "To cite Rootstrap please use: " << endl << endl
+            << "Suha Naser-Khdour, Bui Quang Minh, Robert Lanfear (2022)" << endl
+            << "Assessing Confidence in Root Placement on Phylogenies: An Empirical Study Using Nonreversible Models for Mammals." << endl
+            << "Systematic Biology, 71:959–972." << endl
+            << "https://doi.org/10.1093/sysbio/syab067" << endl << endl;
+    }
+
+    if (params.model_name.find("+H") != string::npos) {
+        out << "To cite the GHOST \"+H\" please use: " << endl << endl
+            << "Stephen M Crotty, Bui Quang Minh, Nigel G Bean, Barbara R Holland, Jonathan Tuke, Lars S Jermiin, Arndt Von Haeseler (2020)" << endl
+            << "GHOST: Recovering Historical Signal from Heterotachously Evolved Sequence Alignments." << endl
+            << "Systematic Biology, 69:249-264." << endl
+            << "https://doi.org/10.1093/sysbio/syz051" << endl << endl;
+    }
+
+    if (params.symtest != SYMTEST_NONE) {
+        out << "To cite tests of symmetry please use: " << endl << endl
+            << "Suha Naser-Khdour, Bui Quang Minh, Wenqi Zhang, Eric A Stone, Robert Lanfear (2024)" << endl
+            << "The Prevalence and Impact of Model Violations in Phylogenetic Analysis." << endl
+            << "Genome Biology and Evolution, 11:3341-3352." << endl
+            << "https://doi.org/10.1093/gbe/evz193" << endl << endl;
+    }
+
+//    if (DecentTree) {
+//        out << "To cite WHAT please use: " << endl << endl
+//            << "Weiwen Wang, James Barbetti, Thomas Wong, Bryan Thornlow, Russ Corbett-Detig, Yatish Turakhia, Robert Lanfear, Bui Quang Minh (2023)" << endl
+//            << "DecentTree: scalable Neighbour-Joining for the genomic era." << endl
+//            << "Bioinformatics, 39:btad536." << endl
+//            << "https://doi.org/10.1093/bioinformatics/btad536" << endl << endl;
+//    }
+
     if (params.model_name.substr(0,4) == "TEST" || params.model_name.substr(0, 2) == "MF" || params.model_name.empty()) {
         out << "To cite ModelFinder please use: " << endl << endl
             << "Subha Kalyaanamoorthy, Bui Quang Minh, Thomas KF Wong, Arndt von Haeseler," << endl
@@ -102,10 +201,10 @@ void reportReferences(Params &params, ofstream &out) {
     }
     if (posPOMO(params.model_name) != string::npos) {
         out << "For polymorphism-aware models please cite:" << endl << endl
-            << "Dominik Schrempf, Bui Quang Minh, Nicola De Maio, Arndt von Haeseler, and Carolin Kosiol" << endl
-            << "(2016) Reversible polymorphism-aware phylogenetic models and their application to" << endl
-            << "tree inference. J. Theor. Biol., 407:362–370." << endl
-            << "https://doi.org/10.1016/j.jtbi.2016.07.042" << endl << endl;
+            << "Dominik Schrempf, Bui Quang Minh, Arndt von Haeseler, Carolin Kosiol (2019)" << endl
+            << "Polymorphism-Aware Species Trees with Advanced Mutation Models, Bootstrap, and Rate Heterogeneity" << endl
+            << "Molecular Biology and Evolution, 36:1294–1301." << endl
+            << "https://doi.org/10.1093/molbev/msz043" << endl << endl;
     }
 
     if (params.site_freq_file || params.tree_freq_file)
