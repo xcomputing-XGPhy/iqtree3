@@ -176,17 +176,16 @@ jobs:
           pattern: Mac *
 
       - name: Combine Artifacts
-        run: |
-          chmod +x test_scripts/make_universal.sh 
-          file1=`ls "Mac x86-64/iqtree*.zip"`
-          file2=`ls "Mac Arm/iqtree*.zip"`
-          test_scripts/make_universal.sh "$file1" "$file2"
+        run: lipo -create -output iqtree3 "Mac x86-64/iqtree3" "Mac Arm/iqtree3"
+
+      - name: Check Architectures
+        run: lipo -archs iqtree3
 
       - name: Upload Built Binary
         uses: actions/upload-artifact@v4
         with:
           name: Mac Universal
-          path: iqtree*.zip
+          path: iqtree3
           if-no-files-found: error
 
   build-windows-x86-64:
