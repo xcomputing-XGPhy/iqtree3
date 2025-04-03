@@ -239,7 +239,7 @@ jobs:
             -DBoost_INCLUDE_DIR=${{steps.install-boost.outputs.BOOST_ROOT}}/include ^
             -DBoost_LIBRARY_DIRS=${{steps.install-boost.outputs.BOOST_ROOT}}/lib ^
             -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ^
-            -DIQTREE_FLAGS="cpp14" ..
+            -DIQTREE_FLAGS="static cpp14" ..
           make -j
           make package
         env:
