@@ -49,9 +49,11 @@ jobs:
       run: |
         mkdir build
         cd build
-        cmake .. -DIQTREE_FLAGS=static -DCMAKE_C_COMPILER=$(which gcc-${{ matrix.gcc-version }}) -DCMAKE_CXX_COMPILER=$(which g++-${{ matrix.gcc-version }})
+        cmake .. -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DIQTREE_FLAGS=static -DCMAKE_C_COMPILER=$(which gcc-${{ matrix.gcc-version }}) -DCMAKE_CXX_COMPILER=$(which g++-${{ matrix.gcc-version }})
         make -j
+        make package
         file iqtree3 | grep x86-64
+        file iqtree*.tar.gz | grep gzip
 
     - name: Upload Built Binary
       # Only upload for one of the gcc & cmake tests
@@ -59,7 +61,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: Linux x86-64
-        path: build/iqtree3
+        path: build/iqtree*.tar.gz
         if-no-files-found: error
 
   build-linux-aarch64:
@@ -83,13 +85,15 @@ jobs:
            cd build
            cmake .. -DIQTREE_FLAGS=static
            make -j
+           make package
            file iqtree3 | grep aarch64
+           file iqtree*.tar.gz | grep gzip
 
        - name: Upload Built Binary
          uses: actions/upload-artifact@v4
          with:
            name: Linux AArch64
-           path: build/iqtree3
+           path: build/iqtree*.tar.gz
            if-no-files-found: error
 
   build-macos-x86_64:
@@ -113,14 +117,16 @@ jobs:
           export CPPFLAGS="-I/usr/local/opt/libomp/include"
           export CXXFLAGS="-I/usr/local/opt/libomp/include"
           cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
-          gmake -j
+          make -j
+          make package
           file iqtree3 | grep x86_64
+          file iqtree*.zip | grep Zip
           
       - name: Upload Built Binary
         uses: actions/upload-artifact@v4
         with:
           name: Mac x86-64
-          path: build/iqtree3
+          path: build/iqtree*.zip
           if-no-files-found: error
 
   build-macos-arm:
@@ -144,14 +150,16 @@ jobs:
           export CPPFLAGS="-I/opt/homebrew/opt/libomp/include"
           export CXXFLAGS="-I/opt/homebrew/opt/libomp/include"
           cmake .. -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
-          gmake -j
+          make -j
+          make package
           file iqtree3 | grep arm64
+          file iqtree*.zip | grep Zip
 
       - name: Upload Built Binary
         uses: actions/upload-artifact@v4
         with:
           name: Mac Arm
-          path: build/iqtree3
+          path: build/iqtree*.zip
           if-no-files-found: error
 
   compile-mac-universal:
@@ -219,8 +227,10 @@ jobs:
             -DCMAKE_MAKE_PROGRAM=mingw32-make ^
             -DBoost_INCLUDE_DIR=${{steps.install-boost.outputs.BOOST_ROOT}}/include ^
             -DBoost_LIBRARY_DIRS=${{steps.install-boost.outputs.BOOST_ROOT}}/lib ^
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 ^
             -DIQTREE_FLAGS="cpp14" ..
           make -j
+          make package
         env:
           BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
 
@@ -229,10 +239,11 @@ jobs:
         run: |
           cd build
           file iqtree3.exe | grep x86-64
+          file iqtree*.zip
 
       - name: Upload Built Binary
         uses: actions/upload-artifact@v4
         with:
           name: Windows x86-64
-          path: build/iqtree3.exe
+          path: build/iqtree*.zip
           if-no-files-found: error
