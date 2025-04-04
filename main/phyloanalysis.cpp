@@ -176,7 +176,7 @@ void reportReferences(Params &params, ofstream &out) {
 
     if (params.symtest != SYMTEST_NONE) {
         out << "To cite tests of symmetry please use: " << endl << endl
-            << "Suha Naser-Khdour, Bui Quang Minh, Wenqi Zhang, Eric A Stone, Robert Lanfear (2024)" << endl
+            << "Suha Naser-Khdour, Bui Quang Minh, Wenqi Zhang, Eric A Stone, Robert Lanfear (2019)" << endl
             << "The Prevalence and Impact of Model Violations in Phylogenetic Analysis." << endl
             << "Genome Biology and Evolution, 11:3341-3352." << endl
             << "https://doi.org/10.1093/gbe/evz193" << endl << endl;
