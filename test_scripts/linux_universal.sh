@@ -36,9 +36,11 @@ unzip -o -q -d "$TMPDIR" "$TMPZIP"
 # Clean up
 rm -f "$TMPZIP"
 
+# Trap EXIT signal to clean up temporary directory
+trap 'rm -rf "$TMPDIR"' EXIT
+
 # Run the extracted binary
 "$TMPDIR/$BINARY" "$@"
 
 # clean up
-rm -rf "$TMPDIR"
 exit
