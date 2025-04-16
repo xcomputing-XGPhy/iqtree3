@@ -1486,9 +1486,9 @@ void runModelFinder(Params &params, IQTree &iqtree, ModelCheckpoint &model_info,
             iqtree.aln->model_name = best_model.getName();
             best_subst_name = best_model.subst_name;
             best_rate_name = best_model.rate_name;
-            bool mix_finder_mode = (params.model_name == "MIX+MF" || params.model_name == "MIX+MFP" || params.model_name == "MF+MIX" || params.model_name == "MFP+MIX");
-            if (mix_finder_mode)
-                best_rate_name = best_model.orig_rate_name;
+            string best_orig_rate_name = best_model.orig_rate_name;
+            if (under_mix_finder)
+                CKP_SAVE(best_orig_rate_name); // for mixture finder
             // Checkpoint *checkpoint = &model_info;
             string best_model_AIC, best_model_AICc, best_model_BIC;
             CKP_RESTORE(best_model_AIC);
@@ -6451,7 +6451,7 @@ CandidateModel runModelSelection(Params &params, IQTree &iqtree, ModelCheckpoint
 
     iqtree.aln->model_name = best_model.getName();
     best_subst_name = best_model.subst_name;
-    best_rate_name = best_model.orig_rate_name; // because the original rate name may include the input parameters
+    best_rate_name = best_model.rate_name;
 
     Checkpoint *checkpoint = &model_info;
     string best_model_AIC, best_model_AICc, best_model_BIC;
@@ -6539,6 +6539,7 @@ void optimiseQMixModel_method_update(Params &params, IQTree* &iqtree, ModelCheck
     params.model_name = "";
     bool under_mix_finder = true;
     runModelFinder(params, *iqtree, model_info, best_subst_name, best_rate_name, nest_network, under_mix_finder);
+    string best_orig_rate_name = model_info["best_orig_rate_name"];
 
     // (cancel) Step 2: do tree search for this single-class model
     // runTreeReconstruction(params, iqtree);
@@ -6568,6 +6569,8 @@ void optimiseQMixModel_method_update(Params &params, IQTree* &iqtree, ModelCheck
     do_init_tree = false;
     model_str = best_subst_name;
     do {
+        if (params.optimize_from_given_params == false)
+            best_rate_name = best_orig_rate_name;
         best_model = runModelSelection(params, *iqtree, model_info, action, do_init_tree, model_str, best_subst_name, best_rate_name, nest_network);
         cout << endl << "Model: " << best_subst_name << best_rate_name << "; df: " << best_model.df << "; loglike: " << best_model.logl << "; " << criteria_str << " score: " << best_model.getScore() << ";";
         if (params.opt_qmix_criteria == 1) {
@@ -6601,6 +6604,8 @@ void optimiseQMixModel_method_update(Params &params, IQTree* &iqtree, ModelCheck
     model_info.put("best_model_BIC", best_model_pre_BIC);
 
     best_subst_name = model_str;
+    if (params.optimize_from_given_params == false)
+        best_rate_name = best_orig_rate_name;
     int n_class = getClassNum(model_str);
     if (params.opt_rhas_again) {
         if (n_class == 1) {
