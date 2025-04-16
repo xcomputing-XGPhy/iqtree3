@@ -1486,6 +1486,9 @@ void runModelFinder(Params &params, IQTree &iqtree, ModelCheckpoint &model_info,
             iqtree.aln->model_name = best_model.getName();
             best_subst_name = best_model.subst_name;
             best_rate_name = best_model.rate_name;
+            bool mix_finder_mode = (params.model_name == "MIX+MF" || params.model_name == "MIX+MFP" || params.model_name == "MF+MIX" || params.model_name == "MFP+MIX");
+            if (mix_finder_mode)
+                best_rate_name = best_model.orig_rate_name;
             // Checkpoint *checkpoint = &model_info;
             string best_model_AIC, best_model_AICc, best_model_BIC;
             CKP_RESTORE(best_model_AIC);
@@ -2066,7 +2069,6 @@ string CandidateModel::evaluate(Params &params,
     logl += new_logl;
     string tree_string = iqtree->getTreeString();
 
-    //cout << "[optimized] " << iqtree->getModelFactory()->model->getNameParams(false) << endl;
 
     if (syncChkPoint != nullptr)
         iqtree->getModelFactory()->syncChkPoint = nullptr;
@@ -6449,7 +6451,7 @@ CandidateModel runModelSelection(Params &params, IQTree &iqtree, ModelCheckpoint
 
     iqtree.aln->model_name = best_model.getName();
     best_subst_name = best_model.subst_name;
-    best_rate_name = best_model.rate_name;
+    best_rate_name = best_model.orig_rate_name; // because the original rate name may include the input parameters
 
     Checkpoint *checkpoint = &model_info;
     string best_model_AIC, best_model_AICc, best_model_BIC;
@@ -6625,11 +6627,12 @@ void optimiseQMixModel(Params &params, IQTree* &iqtree, ModelCheckpoint &model_i
 
     IQTree* new_iqtree;
     string model_str;
-
-    if (params.model_name.substr(0,6) != "MIX+MF")
+    bool mix_finder_mode = (params.model_name == "MIX+MF" || params.model_name == "MIX+MFP" || params.model_name == "MF+MIX" || params.model_name == "MFP+MIX");
+    
+    if (!mix_finder_mode)
         return;
     
-    bool test_only = (params.model_name == "MIX+MF");
+    bool test_only = (params.model_name == "MIX+MF" || params.model_name == "MF+MIX");
     params.model_name = "";
     
     if (MPIHelper::getInstance().getNumProcesses() > 1)
