@@ -113,7 +113,7 @@ jobs:
           name: Linux x86-64
           path: x86
         
-      - name: Download Mac Arm Artifact
+      - name: Download Linux Arm Artifact
         uses: actions/download-artifact@v4
         with:
           name: Linux AArch64
@@ -122,8 +122,8 @@ jobs:
       - name: Combine Artifacts
         run: |
           chmod +x test_scripts/make_linux_universal.sh 
-          file1=$(ls x86/iqtree*.zip)
-          file2=$(ls arm/iqtree*.zip)
+          file1=$(ls x86/iqtree*.tar.gz)
+          file2=$(ls arm/iqtree*.tar.gz)
           test_scripts/make_universal.sh "$file1" "$file2"
           
       - name: Upload Built Binary
