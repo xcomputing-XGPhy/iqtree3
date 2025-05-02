@@ -1412,6 +1412,7 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.pll = false;
 #endif
     params.modelEps = 0.01;
+    params.fundiEps = 0.000001;
     params.modelfinder_eps = 0.1;
     params.treemix_eps = 0.001;
     params.treemixhmm_eps = 0.01;
@@ -1570,7 +1571,9 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.alisim_length_ratio = 2;
     params.birth_rate = 0.8;
     params.death_rate = 0.2;
-    params.alisim_fundi_proportion = 0;
+    params.alisim_fundi_proportion = 0.0;
+    params.fundi_init_proportion = 0.5;
+    params.fundi_init_branch_length = 0.0;
     params.alisim_distribution_definitions = NULL;
     params.alisim_skip_checking_memory = false;
     params.alisim_write_internal_sequences = false;
@@ -1608,6 +1611,11 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.include_pre_mutations = false;
     params.mutation_file = "";
     params.site_starting_index = 0;
+    
+    // ----------- SPRTA ----------
+    params.compute_SPRTA = false;
+    params.SPRTA_zero_branches = false;
+    params.out_alter_spr = false;
 
     // store original params
     for (cnt = 1; cnt < argc; cnt++) {
@@ -2920,13 +2928,34 @@ void parseArg(int argc, char *argv[], Params &params) {
                     params.alisim_fundi_proportion = 0.0;
                 } else {
                     params.alisim_fundi_proportion = convert_double(fundi_input.c_str());
-                    if (params.alisim_fundi_proportion > 1 || params.alisim_fundi_proportion < 0)
+                    if (params.alisim_fundi_proportion > 1 || params.alisim_fundi_proportion <= 0)
                         throw "Proportion in FunDi model must be positive and not greater than 1";
                 }
                 
                 continue;
             }
-			if (strcmp(argv[cnt], "-ngs_gap") == 0) {
+
+            if (strcmp(argv[cnt], "--fundi-init-rho") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --fundi-init-rho <proportion>";
+                params.fundi_init_proportion = convert_double(argv[cnt]);
+                if (params.fundi_init_proportion >= 1 || params.fundi_init_proportion <= 0)
+                    throw "Initial proportion in FunDi model must be positive and smaller than 1";
+                continue;
+            }
+
+            if (strcmp(argv[cnt], "--fundi-init-branch") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --fundi-init-branch <branch_legth>";
+                params.fundi_init_branch_length = convert_double(argv[cnt]);
+                if (params.fundi_init_branch_length >= params.max_branch_length || params.fundi_init_branch_length <= 0)
+                    throw "Initial branch length in FunDi model must be positive and smaller than 10";
+                continue;
+            }
+
+            if (strcmp(argv[cnt], "-ngs_gap") == 0) {
 				params.ngs_ignore_gaps = false;
 				continue;
 			}
@@ -3205,6 +3234,24 @@ void parseArg(int argc, char *argv[], Params &params) {
             if (strcmp(argv[cnt], "-pathogen-force") == 0 || strcmp(argv[cnt], "--pathogen-force") == 0) {
                 params.inference_alg = ALG_CMAPLE;
                 continue;
+            }
+            if (strcmp(argv[cnt], "--sprta") == 0 ||
+                strcmp(argv[cnt], "-sprta") == 0) {
+              params.compute_SPRTA = true;
+
+              continue;
+            }
+            if (strcmp(argv[cnt], "--sprta-zero-branch") == 0 ||
+                strcmp(argv[cnt], "-sprta-zero-branch") == 0) {
+              params.SPRTA_zero_branches = true;
+
+              continue;
+            }
+            if (strcmp(argv[cnt], "--sprta-other-places") == 0 ||
+                strcmp(argv[cnt], "-sprta-other-places") == 0) {
+              params.out_alter_spr = true;
+
+              continue;
             }
             if (strcmp(argv[cnt], "--out-csv") == 0) {
                 params.output_format = FORMAT_CSV;
@@ -4757,6 +4804,18 @@ void parseArg(int argc, char *argv[], Params &params) {
 				continue;
 			}
 
+            if (strcmp(argv[cnt], "-fundi-epsilon") == 0 || strcmp(argv[cnt], "--fundi-epsilon") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use --fundi-epsilon <fundi_epsilon>";
+                params.fundiEps = convert_double(argv[cnt]);
+                if (params.fundiEps <= 0.0)
+                    throw "Fundi epsilon must be positive";
+                if (params.fundiEps > 1.0)
+                    throw "Fundi epsilon must not be larger than 1.0";
+                continue;
+            }
+
             if (strcmp(argv[cnt], "--mf-epsilon") == 0) {
                 cnt++;
                 if (cnt >= argc)
@@ -4764,7 +4823,7 @@ void parseArg(int argc, char *argv[], Params &params) {
                 params.modelfinder_eps = convert_double(argv[cnt]);
                 if (params.modelfinder_eps <= 0.0)
                     throw "ModelFinder epsilon must be positive";
-                if (params.modelEps > 1.0)
+                if (params.modelfinder_eps > 1.0)
                     throw "ModelFinder epsilon must not be larger than 1.0";
                 continue;
             }
@@ -5853,9 +5912,9 @@ void parseArg(int argc, char *argv[], Params &params) {
                 err += "\" option.";
                 throw err;
             } else {
-//                if (params.user_file == NULL)
-//                    params.user_file = argv[cnt];
-//                else
+                if (params.user_file == NULL)
+                    params.user_file = argv[cnt];
+                else
                     params.out_file = argv[cnt];
             }
         }
@@ -6099,12 +6158,6 @@ void usage(char* argv[]) {
 
     //	cout << "  -rep <times>        Repeat algorithm a number of times." << endl;
     //	cout << "  -noout              Print no output file." << endl;
-    cout << endl;
-    cout << "OPTIONS FOR GENOMIC EPIDEMIOLOGICAL ANALYSES:" << endl;
-    cout << "  --pathogen           Apply CMAPLE tree search algorithm if sequence" << endl;
-    cout << "                       divergence is low, otherwise, apply IQ-TREE algorithm." << endl;
-    cout << "  --pathogen-force     Apply CMAPLE tree search algorithm regardless" << endl;
-    cout << "                       of sequence divergence." << endl;
     cout << endl;
     //cout << "HIDDEN OPTIONS: see the source code file pda.cpp::parseArg()" << endl;
 
@@ -6427,6 +6480,12 @@ void usage_iqtree(char* argv[], bool full_command) {
     << "                       divergence is low, otherwise, apply IQ-TREE algorithm." << endl
     << "  --pathogen-force     Apply CMAPLE tree search algorithm regardless" << endl
     << "                       of sequence divergence." << endl
+    << "  --alrt <num_rep>     Specify number of replicates to compute SH-aLRT." << endl
+    << "  --sprta              Compute SPRTA (DeMaio et al., 2024) branch supports." << endl
+    << "  --sprta-zero-branch  Compute SPRTA supports for zero-length branches." << endl
+    << "  --sprta-other-places Output alternative SPRs and their SPRTA supports." << endl
+    << "  -T <num_thread>      Specify number of threads used for computing" << endl
+    << "                       branch supports (SH-aLRT or SPRTA)." << endl
 
 
     
@@ -6512,31 +6571,32 @@ void usage_iqtree(char* argv[], bool full_command) {
 
 void quickStartGuide() {
     printCopyright(cout);
-    cout << "Command-line examples (replace 'iqtree2 ...' by actual path to executable):" << endl << endl
+    cout << "Command-line examples (replace 'iqtree3 ...' by actual path to executable):" << endl << endl
          << "1. Infer maximum-likelihood tree from a sequence alignment (example.phy)" << endl
          << "   with the best-fit model automatically selected by ModelFinder:" << endl
-         << "     iqtree2 -s example.phy" << endl << endl
+         << "     iqtree3 -s example.phy" << endl << endl
          << "2. Perform ModelFinder without subsequent tree inference:" << endl
-         << "     iqtree2 -s example.phy -m MF" << endl
+         << "     iqtree3 -s example.phy -m MF" << endl
          << "   (use '-m TEST' to resemble jModelTest/ProtTest)" << endl << endl
          << "3. Combine ModelFinder, tree search, ultrafast bootstrap and SH-aLRT test:" << endl
-         << "     iqtree2 -s example.phy --alrt 1000 -B 1000" << endl << endl
+         << "     iqtree3 -s example.phy --alrt 1000 -B 1000" << endl << endl
          << "4. Perform edge-linked proportional partition model (example.nex):" << endl
-         << "     iqtree2 -s example.phy -p example.nex" << endl
+         << "     iqtree3 -s example.phy -p example.nex" << endl
          << "   (replace '-p' by '-Q' for edge-unlinked model)" << endl << endl
          << "5. Find best partition scheme by possibly merging partitions:" << endl
-         << "     iqtree2 -s example.phy -p example.nex -m MF+MERGE" << endl
+         << "     iqtree3 -s example.phy -p example.nex -m MF+MERGE" << endl
          << "   (use '-m TESTMERGEONLY' to resemble PartitionFinder)" << endl << endl
          << "6. Find best partition scheme followed by tree inference and bootstrap:" << endl
-         << "     iqtree2 -s example.phy -p example.nex -m MFP+MERGE -B 1000" << endl << endl
+         << "     iqtree3 -s example.phy -p example.nex -m MFP+MERGE -B 1000" << endl << endl
 #ifdef _OPENMP
          << "7. Use 4 CPU cores to speed up computation: add '-T 4' option" << endl << endl
 #endif
          << "8. Polymorphism-aware model with HKY nucleotide model and Gamma rate:" << endl
-         << "     iqtree2 -s counts_file.cf -m HKY+P+G" << endl << endl
-         << "9. PoMo mixture with virtual popsize 5 and weighted binomial sampling:" << endl
-         << "     iqtree2 -s counts_file.cf -m \"MIX{HKY+P{EMP},JC+P}+N5+WB\"" << endl << endl
-         << "To show all available options: run 'iqtree2 -h'" << endl << endl
+         << "     iqtree3 -s counts_file.cf -m HKY+P+G" << endl << endl
+    // BQM: this example is too complicated
+//         << "9. PoMo mixture with virtual popsize 5 and weighted binomial sampling:" << endl
+//         << "     iqtree3 -s counts_file.cf -m \"MIX{HKY+P{EMP},JC+P}+N5+WB\"" << endl << endl
+         << "To show all available options: run 'iqtree3 -h'" << endl << endl
          << "Have a look at the tutorial and manual for more information:" << endl
          << "     http://www.iqtree.org" << endl << endl;
     exit(0);
