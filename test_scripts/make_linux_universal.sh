@@ -15,8 +15,8 @@ mkdir -p $universalname
 mkdir -p $universalname/bin
 cp $intelname/*.* $universalname
 
-cp $intelname/bin/iqtree3 $universalname/bin/.iqtree3_intel
-cp $armname/bin/iqtree3 $universalname/bin/.iqtree3_arm
+cp $intelname/bin/iqtree3 $universalname/bin/iqtree3_intel
+cp $armname/bin/iqtree3 $universalname/bin/iqtree3_arm
 
 # Make the final file executable
 chmod +x linux_universal.sh
