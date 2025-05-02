@@ -124,7 +124,7 @@ jobs:
           chmod +x test_scripts/make_linux_universal.sh 
           file1=$(ls x86/iqtree*.tar.gz)
           file2=$(ls arm/iqtree*.tar.gz)
-          test_scripts/make_universal.sh "$file1" "$file2"
+          test_scripts/make_linux_universal.sh "$file1" "$file2"
           
       - name: Upload Built Binary
         uses: actions/upload-artifact@v4
