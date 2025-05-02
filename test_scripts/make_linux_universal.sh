@@ -19,8 +19,8 @@ cp $intelname/bin/iqtree3 $universalname/bin/iqtree3_intel
 cp $armname/bin/iqtree3 $universalname/bin/iqtree3_arm
 
 # Make the final file executable
-chmod +x linux_universal.sh
-cp linux_universal.sh $universalname/bin/iqtree3
+chmod +x test_scripts/linux_universal.sh
+cp test_scripts/linux_universal.sh $universalname/bin/iqtree3
 
 
 rm -rf $intelname
