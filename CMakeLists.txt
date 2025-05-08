@@ -441,8 +441,8 @@ if (__ARM_NEON AND APPLE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Dthread_local=")
 endif()
 
-# for list of libraries to combine with for building IQTREE2 static library
-SET(STATIC_LIBS "${PROJECT_BINARY_DIR}/libiqtree2.a")
+# for list of libraries to combine with for building IQTREE3 static library
+SET(STATIC_LIBS "${PROJECT_BINARY_DIR}/libiqtree3.a")
 
 
 ##################################################################
@@ -1092,25 +1092,25 @@ endif()
 if (BUILD_LIB STREQUAL "ON")
     if(APPLE)
         add_custom_command(
-            TARGET iqtree2 POST_BUILD
-            COMMAND libtool -static -o libiqtree2full.a ${STATIC_LIBS}
-            COMMAND mv libiqtree2full.a libiqtree2.a
+            TARGET iqtree3 POST_BUILD
+            COMMAND libtool -static -o libiqtree3full.a ${STATIC_LIBS}
+            COMMAND mv libiqtree3full.a libiqtree3.a
             VERBATIM)
     elseif(UNIX)
         add_custom_command(
-            TARGET iqtree2 POST_BUILD
+            TARGET iqtree3 POST_BUILD
             COMMAND mkdir all_libs
             COMMAND ln -s ${STATIC_LIBS} all_libs
-            COMMAND ${PROJECT_SOURCE_DIR}/test_scripts/unify-static-libs.sh libiqtree2full.a all_libs
-            COMMAND mv libiqtree2full.a libiqtree2.a
+            COMMAND ${PROJECT_SOURCE_DIR}/test_scripts/unify-static-libs.sh libiqtree3full.a all_libs
+            COMMAND mv libiqtree3full.a libiqtree3.a
             COMMAND rm -rf all_libs
             VERBATIM)
     elseif(WIN32)
         add_custom_command(
-            TARGET iqtree2 POST_BUILD
+            TARGET iqtree3 POST_BUILD
             COMMAND ${PROJECT_SOURCE_DIR}/test_scripts/unify-static-libs.bat ${STATIC_LIBS}
-            COMMAND ${CMAKE_COMMAND} -E rm -f libiqtree2.a
-            COMMAND ${CMAKE_COMMAND} -E rename libiqtree2full.a libiqtree2.a
+            COMMAND ${CMAKE_COMMAND} -E rm -f libiqtree3.a
+            COMMAND ${CMAKE_COMMAND} -E rename libiqtree3full.a libiqtree3.a
             COMMAND ${PROJECT_SOURCE_DIR}/test_scripts/make-dll-lib.bat ${PROJECT_SOURCE_DIR}/test_scripts/bridge.cpp
             VERBATIM)
     endif()
