@@ -1887,7 +1887,7 @@ string CandidateModel::evaluate(Params &params,
     iqtree->restoreCheckpoint();
     ASSERT(iqtree->root);
     iqtree->initializeModel(params, getName(), models_block);
-    if (!iqtree->getModel()->isMixture() || in_aln->seq_type == SEQ_POMO) {
+    if (!iqtree->getModel()->isMixture() || in_aln->seq_type == SEQ_POMO || model_selection_action) {
         subst_name = iqtree->getSubstName();
         rate_name = iqtree->getRateName();
     }
