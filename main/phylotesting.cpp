@@ -6649,22 +6649,50 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
 
     IQTree* new_iqtree;
     string model_str;
+    Alignment* aln;
     bool mix_finder_mode = (params.model_name == "MIX+MF" || params.model_name == "MIX+MFP" || params.model_name == "MF+MIX" || params.model_name == "MFP+MIX");
     
     if (!mix_finder_mode)
         return;
     
     bool test_only = (params.model_name == "MIX+MF" || params.model_name == "MF+MIX");
-    params.model_name = "";
     
     if (MPIHelper::getInstance().getNumProcesses() > 1)
         outError("Error! The option -m '" + params.model_name + "' does not support MPI parallelization");
     
-    if (iqtree->isSuperTree())
-        outError("Error! The option -m '" + params.model_name + "' cannot work on data set with partitions");
+    if (iqtree->isSuperTree()) {
+        SuperAlignment* saln = (SuperAlignment*)iqtree->aln;
+        if (saln->partitions.size() == 1)
+            aln = saln->partitions[0];
+        else
+            outError("Error! The option -m '" + params.model_name + "' cannot work on data set with more than one partition");
+    } else {
+        aln = iqtree->aln;
+    }
     
-    if (iqtree->aln->seq_type != SEQ_DNA)
+    if (aln->seq_type != SEQ_DNA)
         outError("Error! The option -m '" + params.model_name + "' can only work on DNA data set");
+
+    // create a new IQTree object for this mixture model
+    // allocate heterotachy tree if neccessary
+    int pos = posRateHeterotachy(aln->model_name);
+    if (params.num_mixlen > 1) {
+        new_iqtree = new PhyloTreeMixlen(aln, params.num_mixlen);
+    } else if (pos != string::npos) {
+        new_iqtree = new PhyloTreeMixlen(aln, 0);
+    } else {
+        new_iqtree = new IQTree(aln);
+    }
+    new_iqtree->setCheckpoint(iqtree->getCheckpoint());
+    if (!iqtree->constraintTree.empty())
+        new_iqtree->constraintTree.readConstraint(iqtree->constraintTree);
+    new_iqtree->removed_seqs = iqtree->removed_seqs;
+    new_iqtree->twin_seqs = iqtree->twin_seqs;
+    if (params.start_tree == STT_PLL_PARSIMONY || params.start_tree == STT_RANDOM_TREE || params.pll) {
+        /* Initialized all data structure for PLL*/
+        new_iqtree->initializePLL(params);
+    }
+    new_iqtree->setParams(&params);
 
     cout << "--------------------------------------------------------------------" << endl;
     cout << "|                Running MixtureFinder                             |" << endl;
@@ -6677,8 +6705,9 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
     params.gbo_replicates = 0;
     params.consensus_type = CT_NONE;
     params.stop_condition = SC_UNSUCCESS_ITERATION;
+    params.model_name = "";
 
-    runMixtureFinderMain(params, iqtree, model_info, model_str);
+    runMixtureFinderMain(params, new_iqtree, model_info, model_str);
     
     // restore the original values
     params.gbo_replicates = orig_gbo_replicates;
@@ -6691,30 +6720,10 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
 
     params.model_name = model_str;
     iqtree->aln->model_name = model_str;
-
-    // create a new IQTree object for this mixture model
-    // allocate heterotachy tree if neccessary
-    int pos = posRateHeterotachy(iqtree->aln->model_name);
-    if (params.num_mixlen > 1) {
-        new_iqtree = new PhyloTreeMixlen(iqtree->aln, params.num_mixlen);
-    } else if (pos != string::npos) {
-        new_iqtree = new PhyloTreeMixlen(iqtree->aln, 0);
-    } else {
-        new_iqtree = new IQTree(iqtree->aln);
-    }
-    new_iqtree->setCheckpoint(iqtree->getCheckpoint());
-    if (!iqtree->constraintTree.empty())
-        new_iqtree->constraintTree.readConstraint(iqtree->constraintTree);
-    new_iqtree->removed_seqs = iqtree->removed_seqs;
-    new_iqtree->twin_seqs = iqtree->twin_seqs;
-    if (params.start_tree == STT_PLL_PARSIMONY || params.start_tree == STT_RANDOM_TREE || params.pll) {
-        /* Initialized all data structure for PLL*/
-        new_iqtree->initializePLL(params);
-    }
-    new_iqtree->setParams(&params);
-    new_iqtree->copyPhyloTree(iqtree, false);
-    delete(iqtree);
-    iqtree = new_iqtree;
+    if (!iqtree->isSuperTree())
+        iqtree->copyPhyloTree(new_iqtree, false);
+    
+    delete(new_iqtree);
 
     if (test_only) {
         params.min_iterations = 0;
