@@ -3344,7 +3344,7 @@ void startTreeReconstruction(Params &params, IQTree* &iqtree, ModelCheckpoint &m
     map <string, vector<string> > nest_network;
     runModelFinder(params, *iqtree, model_info, best_subst_name, best_rate_name, nest_network);
     
-    optimiseQMixModel(params, iqtree, model_info);
+    runMixtureFinder(params, iqtree, model_info);
     
     // if users want to perform tree dating (with mcmc)
     // and if ModelFinder was run, the traversal starting node was incidently deleted (after copyTree and restoreCheckpoint)
