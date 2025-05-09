@@ -1292,6 +1292,11 @@ void runModelFinder(Params &params, IQTree &iqtree, ModelCheckpoint &model_info,
         return;
     }
 
+    if (params.model_name == "MIX+MF" || params.model_name == "MIX+MFP" || params.model_name == "MF+MIX" || params.model_name == "MFP+MIX") {
+        // mixture finder
+        return;
+    }
+
     if (nest_network.size() == 0 && iqtree.aln->seq_type == SEQ_DNA) {
         // build the nest relationship between the models
         // we will use the optimized parameters of the last model which is nested by this model
