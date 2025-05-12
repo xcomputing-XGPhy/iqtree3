@@ -6642,6 +6642,8 @@ void runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &mode
     }
 
     model_str = best_subst_name+best_rate_name;
+    // save the model checkpoint to the file
+    iqtree->getModelFactory()->saveCheckpoint();
 }
 
 // Optimisation of Q-Mixture model, including estimation of best number of classes in the mixture
