@@ -6720,8 +6720,12 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
 
     params.model_name = model_str;
     iqtree->aln->model_name = model_str;
-    if (!iqtree->isSuperTree())
+    if (!iqtree->isSuperTree()) {
         iqtree->copyPhyloTree(new_iqtree, false);
+    } else {
+        // alignment with a single partition
+        ((PhyloSuperTree*)iqtree)->at(0)->aln->model_name = model_str;
+    }
     
     delete(new_iqtree);
 
