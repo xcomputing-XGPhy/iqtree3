@@ -1346,7 +1346,7 @@ void reportSubstitutionProcess(ostream &out, Params &params, IQTree &tree)
         PhyloSuperTree *stree = (PhyloSuperTree*) &tree;
         PhyloSuperTree::iterator it;
         it = stree->begin();
-        if ((*it)->getModel()->isMixture()) { // check whether run mixturefinder with one partition
+        if ((*it)->getModel()->isMixture() && stree->size() == 1) { // check whether run mixturefinder with one partition
             out << "Mixture model of substitution in partition one: " << (*it)->getModelName() << endl;
             reportMixModel(out, (*it)->aln, (*it)->getModel());
         } else {
