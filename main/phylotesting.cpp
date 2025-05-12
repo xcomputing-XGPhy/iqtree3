@@ -6726,6 +6726,7 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
         iqtree->copyPhyloTree(new_iqtree, false);
     } else {
         ((PhyloSuperTree*)iqtree)->at(0)->aln->model_name = model_str;
+        ((PhyloSuperTree*)iqtree)->at(0)->copyPhyloTree(new_iqtree, false);
     }
     
     delete(new_iqtree);
