@@ -6620,6 +6620,8 @@ void runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &mode
     model_info.put("best_model_AIC", best_model_pre_AIC);
     model_info.put("best_model_AICc", best_model_pre_AICc);
     model_info.put("best_model_BIC", best_model_pre_BIC);
+    // force to dump all checkpointing information
+    model_info.dump(true);
 
     best_subst_name = model_str;
     if (params.optimize_from_given_params == false)
@@ -6720,8 +6722,11 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
 
     params.model_name = model_str;
     iqtree->aln->model_name = model_str;
-    if (!iqtree->isSuperTree())
+    if (!iqtree->isSuperTree()) {
         iqtree->copyPhyloTree(new_iqtree, false);
+    } else {
+        ((PhyloSuperTree*)iqtree)->at(0)->aln->model_name = model_str;
+    }
     
     delete(new_iqtree);
 
