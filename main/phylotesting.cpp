@@ -6620,6 +6620,8 @@ void runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &mode
     model_info.put("best_model_AIC", best_model_pre_AIC);
     model_info.put("best_model_AICc", best_model_pre_AICc);
     model_info.put("best_model_BIC", best_model_pre_BIC);
+    // force to dump all checkpointing information
+    model_info.dump(true);
 
     best_subst_name = model_str;
     if (params.optimize_from_given_params == false)
@@ -6642,8 +6644,6 @@ void runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &mode
     }
 
     model_str = best_subst_name+best_rate_name;
-    // save the model checkpoint to the file
-    iqtree->getModelFactory()->saveCheckpoint();
 }
 
 // Optimisation of Q-Mixture model, including estimation of best number of classes in the mixture
@@ -6725,7 +6725,6 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
     if (!iqtree->isSuperTree()) {
         iqtree->copyPhyloTree(new_iqtree, false);
     } else {
-        // alignment with a single partition
         ((PhyloSuperTree*)iqtree)->at(0)->aln->model_name = model_str;
     }
     
