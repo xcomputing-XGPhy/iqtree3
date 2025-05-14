@@ -6483,11 +6483,10 @@ CandidateModel findMixtureComponent(Params &params, IQTree &iqtree, ModelCheckpo
 
     delete models_block;
 
-    // force to dump all checkpointing information
-    model_info.dump(true);
-
-    // transfer models parameters
-    transferModelFinderParameters(&iqtree, orig_checkpoint);
+    model_info.dump();
+    // transferModelFinderParameters(&iqtree, orig_checkpoint);
+    // delay the transfer of checkpoints at the function runMixtureFinderMain
+    // because this function will be executed multiple times
     iqtree.setCheckpoint(orig_checkpoint);
 
     params.model_set = orig_model_set;
@@ -6620,9 +6619,12 @@ void runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &mode
     model_info.put("best_model_AIC", best_model_pre_AIC);
     model_info.put("best_model_AICc", best_model_pre_AICc);
     model_info.put("best_model_BIC", best_model_pre_BIC);
-    // force to dump all checkpointing information
-    model_info.dump(true);
-
+    
+    // overwrite the checkpoint by the best models
+    ModelCheckpoint best_model_info;
+    model_info.getSubCheckpoint(&best_model_info, "BestOfTheKClass");
+    model_info.putSubCheckpoint(&best_model_info, "");
+    
     best_subst_name = model_str;
     if (params.optimize_from_given_params == false)
         best_rate_name = best_orig_rate_name;
@@ -6644,6 +6646,16 @@ void runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &mode
     }
 
     model_str = best_subst_name+best_rate_name;
+    
+    // force to dump all checkpointing information
+    model_info.dump(true);
+
+    // transfer models parameters
+    Checkpoint *orig_checkpoint;
+    orig_checkpoint = iqtree->getCheckpoint();
+    iqtree->setCheckpoint(&model_info);
+    transferModelFinderParameters(iqtree, orig_checkpoint);
+    iqtree->setCheckpoint(orig_checkpoint);
 }
 
 // Optimisation of Q-Mixture model, including estimation of best number of classes in the mixture
