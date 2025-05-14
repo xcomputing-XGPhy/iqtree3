@@ -5262,7 +5262,8 @@ void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Ali
             tree->insertTaxa(tree->removed_seqs, tree->twin_seqs);
             tree->printResultTree();
         }
-        delete model_info;
+        if (create_model_info)
+            delete model_info;
 
     } else {
         // the classical non-parameter bootstrap (SBS)

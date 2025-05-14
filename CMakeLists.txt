@@ -245,14 +245,16 @@ endif()
 # Include the CMAPLE library
 ##################################################################
 
-if (BUILD_LIB STREQUAL "ON")
-    set(USE_CMAPLE "OFF")
-    set(USE_CMAPLE_AA "OFF")
-endif()
-
 if (NOT WIN32)
     # temporarily disable cmaple for Windows, next to fix for next release
     option(USE_CMAPLE "Integrate CMAPLE" ON)
+endif()
+
+option(USE_CMAPLE_AA "Integrate CMAPLE-AA" OFF)
+
+if (BUILD_LIB STREQUAL "ON")
+    set(USE_CMAPLE "OFF")
+    set(USE_CMAPLE_AA "OFF")
 endif()
 
 if (USE_CMAPLE STREQUAL "ON")
@@ -267,7 +269,6 @@ else()
 	set(TARGET_CMAPLE "")
 endif()
 
-option(USE_CMAPLE_AA "Integrate CMAPLE-AA" OFF)
 
 if (USE_CMAPLE_AA STREQUAL "ON")
     message("Integrate CMAPLE_AA: ON")
