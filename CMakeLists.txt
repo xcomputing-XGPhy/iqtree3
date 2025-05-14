@@ -244,6 +244,12 @@ endif()
 ##################################################################
 # Include the CMAPLE library
 ##################################################################
+
+if (BUILD_LIB STREQUAL "ON")
+    set(USE_CMAPLE "OFF")
+    set(USE_CMAPLE_AA "OFF")
+endif()
+
 if (NOT WIN32)
     # temporarily disable cmaple for Windows, next to fix for next release
     option(USE_CMAPLE "Integrate CMAPLE" ON)
@@ -268,6 +274,7 @@ if (USE_CMAPLE_AA STREQUAL "ON")
     #add_definitions(-DUSE_CMAPLE)
 else()
     message("Integrate CMAPLE_AA: OFF")
+endif()
 
 ##################################################################
 # build IQTREE library
