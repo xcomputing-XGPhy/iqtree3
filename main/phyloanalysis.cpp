@@ -1342,74 +1342,70 @@ void reportSubstitutionProcess(ostream &out, Params &params, IQTree &tree)
     out << "SUBSTITUTION PROCESS" << endl << "--------------------" << endl
             << endl;
     if (tree.isSuperTree()) {
+        if(params.partition_type == BRLEN_SCALE)
+            out << "Edge-linked-proportional partition model with ";
+        else if(params.partition_type == BRLEN_FIX)
+            out << "Edge-linked-equal partition model with ";
+        else if (params.partition_type == BRLEN_OPTIMIZE)
+            out << "Edge-unlinked partition model with ";
+        else
+            out << "Topology-unlinked partition model with ";
+
+        // if (params.model_joint)
+        if (!params.model_joint.empty())
+            out << "joint substitution model ";
+        else
+            out << "separate substitution models ";
+        if (params.link_alpha)
+            out << "and joint gamma shape";
+        else
+            out << "and separate rates across sites";
+        out << endl << endl;
+
         PhyloSuperTree *stree = (PhyloSuperTree*) &tree;
         PhyloSuperTree::iterator it;
         it = stree->begin();
-        if ((*it)->getModel()->isMixture() && stree->size() == 1) { // check whether run mixturefinder with one partition
-            out << "Mixture model of substitution in partition one: " << (*it)->getModelName() << endl;
-            reportMixModel(out, (*it)->aln, (*it)->getModel());
-        } else {
-            if(params.partition_type == BRLEN_SCALE)
-                out << "Edge-linked-proportional partition model with ";
-            else if(params.partition_type == BRLEN_FIX)
-                out << "Edge-linked-equal partition model with ";
-            else if (params.partition_type == BRLEN_OPTIMIZE)
-                out << "Edge-unlinked partition model with ";
-            else
-                out << "Topology-unlinked partition model with ";
 
-            // if (params.model_joint)
-            if (!params.model_joint.empty())
-                out << "joint substitution model ";
-            else
-                out << "separate substitution models ";
-            if (params.link_alpha)
-                out << "and joint gamma shape";
-            else
-                out << "and separate rates across sites";
-            out << endl << endl;
+        int part;
 
-            int part;
+        // force showing full params if running AliSim
+        bool show_full_params = tree.params->alisim_active;
 
-            // force showing full params if running AliSim
-            bool show_full_params = tree.params->alisim_active;
-
+        if(params.partition_type == BRLEN_OPTIMIZE || params.partition_type == TOPO_UNLINKED)
+            out << "  ID  Model         TreeLen  Parameters" << endl;
+        else
+            out << "  ID  Model           Speed  Parameters" << endl;
+        //out << "-------------------------------------" << endl;
+        for (it = stree->begin(), part = 0; it != stree->end(); it++, part++) {
+            out.width(4);
+            out << right << (part+1) << "  ";
+            out.width(14);
             if(params.partition_type == BRLEN_OPTIMIZE || params.partition_type == TOPO_UNLINKED)
-                out << "  ID  Model         TreeLen  Parameters" << endl;
+                out << left << (*it)->getModelName() << " " << (*it)->treeLength() << "  " << (*it)->getModelNameParams(show_full_params) << endl;
             else
-                out << "  ID  Model           Speed  Parameters" << endl;
-            //out << "-------------------------------------" << endl;
-            for (it = stree->begin(), part = 0; it != stree->end(); it++, part++) {
-                out.width(4);
-                out << right << (part+1) << "  ";
-                out.width(14);
-                if(params.partition_type == BRLEN_OPTIMIZE || params.partition_type == TOPO_UNLINKED)
-                    out << left << (*it)->getModelName() << " " << (*it)->treeLength() << "  " << (*it)->getModelNameParams(show_full_params) << endl;
-                else
-                    out << left << (*it)->getModelName() << " " << stree->part_info[part].part_rate  << "  " << (*it)->getModelNameParams(show_full_params) << endl;
-            }
-            out << endl;
-            /*
-            for (it = stree->begin(), part = 0; it != stree->end(); it++, part++) {
-                reportModel(out, *(*it));
-                reportRate(out, *(*it));
-            }*/
-            PartitionModel *part_model = (PartitionModel*)tree.getModelFactory();
-            if (part_model)
-                for (auto itm = part_model->linked_models.begin(); itm != part_model->linked_models.end(); itm++) {
-                    for (it = stree->begin(); it != stree->end(); it++)
-                        if ((*it)->getModel() == itm->second) {
-                            out << "Linked model of substitution: " << itm->second->getName() << endl;
-                            bool fixed = (*it)->getModel()->fixParameters(false);
-                            if ((*it)->getModel()->isMixture())
-                                reportMixModel(out, (*it)->aln, (*it)->getModel());
-                            else
-                                reportModel(out, (*it)->aln, (*it)->getModel());
-                            (*it)->getModel()->fixParameters(fixed);
-                            break;
-                        }
-                }
+                out << left << (*it)->getModelName() << " " << stree->part_info[part].part_rate  << "  " << (*it)->getModelNameParams(show_full_params) << endl;
         }
+        out << endl;
+        /*
+        for (it = stree->begin(), part = 0; it != stree->end(); it++, part++) {
+            reportModel(out, *(*it));
+            reportRate(out, *(*it));
+        }*/
+        PartitionModel *part_model = (PartitionModel*)tree.getModelFactory();
+        if (part_model)
+            for (auto itm = part_model->linked_models.begin(); itm != part_model->linked_models.end(); itm++) {
+                for (it = stree->begin(); it != stree->end(); it++)
+                    if ((*it)->getModel() == itm->second) {
+                        out << "Linked model of substitution: " << itm->second->getName() << endl;
+                        bool fixed = (*it)->getModel()->fixParameters(false);
+                        if ((*it)->getModel()->isMixture())
+                            reportMixModel(out, (*it)->aln, (*it)->getModel());
+                        else
+                            reportModel(out, (*it)->aln, (*it)->getModel());
+                        (*it)->getModel()->fixParameters(fixed);
+                        break;
+                    }
+            }
     } else {
         reportModel(out, tree);
         reportRate(out, tree);
