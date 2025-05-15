@@ -1263,6 +1263,7 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.store_trans_matrix = false;
     params.parallel_over_sites = false;
     params.order_by_threads = false;
+    params.write_freq_chkpt = false;
     //params.freq_type = FREQ_EMPIRICAL;
     params.freq_type = FREQ_UNKNOWN;
     params.keep_zero_freq = true;
@@ -3496,6 +3497,10 @@ void parseArg(int argc, char *argv[], Params &params) {
                 continue;
             }
 
+            if (strcmp(argv[cnt], "-writefreqchkpt") == 0 || strcmp(argv[cnt], "--writefreqchkpt") == 0) {
+                params.write_freq_chkpt = true;
+                continue;
+            }
 
 
 //			if (strcmp(argv[cnt], "-mh") == 0) {
