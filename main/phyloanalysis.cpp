@@ -928,8 +928,7 @@ void reportTree(ofstream &out, Params &params, PhyloTree &tree, double tree_lh, 
         int ntrees; //mix_df;
         double mix_lh;
 
-        string maic_warning;
-        mix_lh = tree.getModelFactory()->computeMixLh(maic_warning);
+        mix_lh = tree.getModelFactory()->computeMarginalLh();
         if (mix_lh < 0) {
             PhyloSuperTree *stree = (PhyloSuperTree*) &tree;
             ntrees = stree->size();
@@ -940,13 +939,13 @@ void reportTree(ofstream &out, Params &params, PhyloTree &tree, double tree_lh, 
             computeInformationScores(mix_lh, df, ssize, mAIC, mAICc, mBIC);
 
             out << endl;
-            out << "Mixture-based log-likelihood of the tree: " << mix_lh << endl;
+            out << "Marginal log-likelihood of the tree: " << mix_lh << endl;
             out << "Marginal Akaike information criterion (mAIC) score: " << mAIC << endl;
             //out << "Marginal corrected Akaike information criterion (mAICc) score: " << mAICc << endl;
             //out << "Marginal Bayesian information criterion (mBIC) score: " << mBIC << endl;
         } else {
             out << endl;
-            out << maic_warning << endl;
+            out << "mAIC calculation is skipped because not all partition sequence types are same" << endl;
         }
     }
 

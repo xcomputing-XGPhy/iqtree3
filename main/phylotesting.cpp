@@ -6664,6 +6664,7 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
     IQTree* new_iqtree;
     string model_str;
     Alignment* aln;
+
     bool mix_finder_mode = (params.model_name == "MIX+MF" || params.model_name == "MIX+MFP" || params.model_name == "MF+MIX" || params.model_name == "MFP+MIX");
     
     if (!mix_finder_mode)
