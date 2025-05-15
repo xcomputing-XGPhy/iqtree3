@@ -1350,7 +1350,7 @@ void reportSubstitutionProcess(ostream &out, Params &params, IQTree &tree)
             out << "Edge-unlinked partition model with ";
         else
             out << "Topology-unlinked partition model with ";
-        
+
         // if (params.model_joint)
         if (!params.model_joint.empty())
             out << "joint substitution model ";
@@ -1364,8 +1364,10 @@ void reportSubstitutionProcess(ostream &out, Params &params, IQTree &tree)
 
         PhyloSuperTree *stree = (PhyloSuperTree*) &tree;
         PhyloSuperTree::iterator it;
+        it = stree->begin();
+
         int part;
-        
+
         // force showing full params if running AliSim
         bool show_full_params = tree.params->alisim_active;
 
