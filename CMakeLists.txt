@@ -450,7 +450,7 @@ if (__ARM_NEON AND APPLE)
 endif()
 
 # for list of libraries to combine with for building IQTREE3 static library
-SET(STATIC_LIBS "${PROJECT_BINARY_DIR}/libiqtree.a")
+SET(STATIC_LIBS "${PROJECT_BINARY_DIR}/libiqtree3.a")
 
 
 ##################################################################
@@ -1100,24 +1100,23 @@ if (BUILD_LIB STREQUAL "ON")
     if(APPLE)
         add_custom_command(
             TARGET iqtree3 POST_BUILD
-            COMMAND libtool -static -o libiqtreefull.a ${STATIC_LIBS}
-            COMMAND mv libiqtreefull.a libiqtree.a
+            COMMAND libtool -static -o libiqtree.a ${STATIC_LIBS}
+            COMMAND rm libiqtree3.a
             VERBATIM)
     elseif(UNIX)
         add_custom_command(
             TARGET iqtree3 POST_BUILD
             COMMAND mkdir all_libs
             COMMAND ln -s ${STATIC_LIBS} all_libs
-            COMMAND ${PROJECT_SOURCE_DIR}/test_scripts/unify-static-libs.sh libiqtreefull.a all_libs
-            COMMAND mv libiqtreefull.a libiqtree.a
+            COMMAND ${PROJECT_SOURCE_DIR}/test_scripts/unify-static-libs.sh libiqtree.a all_libs
             COMMAND rm -rf all_libs
+            COMMAND rm libiqtree3.a
             VERBATIM)
     elseif(WIN32)
         add_custom_command(
             TARGET iqtree3 POST_BUILD
             COMMAND ${PROJECT_SOURCE_DIR}/test_scripts/unify-static-libs.bat ${STATIC_LIBS}
-            COMMAND ${CMAKE_COMMAND} -E rm -f libiqtree.a
-            COMMAND ${CMAKE_COMMAND} -E rename libiqtreefull.a libiqtree.a
+            COMMAND ${CMAKE_COMMAND} -E rm -f libiqtree3.a
             COMMAND ${PROJECT_SOURCE_DIR}/test_scripts/make-dll-lib.bat ${PROJECT_SOURCE_DIR}/test_scripts/bridge.cpp
             VERBATIM)
     endif()

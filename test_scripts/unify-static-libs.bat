@@ -2,8 +2,8 @@
 setlocal enabledelayedexpansion
 
 :: Set the output library name
-set OUTPUT_LIB=libiqtreefull.a
-set OUTPUT_LIB2=libiqtreefull.lib
+set OUTPUT_LIB=libiqtree.a
+set OUTPUT_LIB2=libiqtree.lib
 
 :: Define the temporary folder
 set TEMP_DIR=temp_objs
