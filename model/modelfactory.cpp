@@ -1126,10 +1126,8 @@ bool ModelFactory::initFromNestedModel(map<string, vector<string> > nest_network
         */
 
         for (i = 0; i < nested_models.size(); i++) {
-            map<string, string>::iterator itr = checkpoint->find(nested_models[i] + rate_name);
-            ASSERT(itr != checkpoint->end());
-
-            string best_model_logl_df = itr->second;
+            string best_model_logl_df;
+            ASSERT(checkpoint->getString(nested_models[i] + rate_name, best_model_logl_df));
             stringstream ss(best_model_logl_df);
             ss >> cur_logl;
 
@@ -1178,10 +1176,8 @@ bool ModelFactory::initFromNestedModel(map<string, vector<string> > nest_network
 
         for (i = 0; i < nested_models.size(); i++) {
             nested_mix_model = replaceLastQ(model_name, nested_models[i]);
-            map<string, string>::iterator itr = checkpoint->find(nested_mix_model + rate_name);
-            ASSERT(itr != checkpoint->end());
-
-            string best_model_logl_df = itr->second;
+            string best_model_logl_df;
+            ASSERT(checkpoint->getString(nested_mix_model + rate_name, best_model_logl_df));
             stringstream ss(best_model_logl_df);
             ss >> cur_logl;
 

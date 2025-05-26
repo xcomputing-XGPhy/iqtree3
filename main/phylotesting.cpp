@@ -1510,9 +1510,6 @@ void runModelFinder(Params &params, IQTree &iqtree, ModelCheckpoint &model_info,
 #endif
     }
 
-    // remove key "OptModel" from the checkpoint file, which is only used for initialising models from the nested models.
-    iqtree.getCheckpoint()->eraseKeyPrefix("OptModel");
-
     delete models_block;
 
     // force to dump all checkpointing information
@@ -1992,8 +1989,10 @@ string CandidateModel::evaluate(Params &params,
 
                 // obtain the likelihood value from the (k-1)-class mixture model
                 string criteria_str = criterionName(params.model_test_criterion);
-                string best_model = in_model_info["best_model_" + criteria_str];
-                string best_model_logl_df = in_model_info[best_model];
+                string best_model;
+                ASSERT(in_model_info.getString("best_model_" + criteria_str, best_model));
+                string best_model_logl_df;
+                ASSERT(in_model_info.getString(best_model, best_model_logl_df));
                 stringstream ss (best_model_logl_df);
                 double pre_logl;
                 ss >> pre_logl;
@@ -3253,6 +3252,10 @@ CandidateModel CandidateModelSet::test(Params &params, PhyloTree* in_tree, Model
     CKP_SAVE(best_score_AIC);
     CKP_SAVE(best_score_AICc);
     CKP_SAVE(best_score_BIC);
+    
+    // remove key "OptModel" from the checkpoint file, which is only used for initialising models from the nested models.
+    model_info.eraseKeyPrefix("OptModel");
+    
     checkpoint->dump();
 
 	delete [] model_rank;
@@ -6479,14 +6482,11 @@ CandidateModel findMixtureComponent(Params &params, IQTree &iqtree, ModelCheckpo
         << criterionName(params.model_test_criterion) << endl;
 
     // remove key "OptModel" from the checkpoint file, which is only used for initialising models from the nested models.
-    iqtree.getCheckpoint()->eraseKeyPrefix("OptModel");
+    model_info.eraseKeyPrefix(model_info.getStructName() + "OptModel");
 
     delete models_block;
 
     model_info.dump();
-    // transferModelFinderParameters(&iqtree, orig_checkpoint);
-    // delay the transfer of checkpoints at the function runMixtureFinderMain
-    // because this function will be executed multiple times
     iqtree.setCheckpoint(orig_checkpoint);
 
     params.model_set = orig_model_set;
@@ -6557,17 +6557,20 @@ void runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &mode
     params.model_name = "";
     bool under_mix_finder = true;
     runModelFinder(params, *iqtree, model_info, best_subst_name, best_rate_name, nest_network, under_mix_finder);
-    string best_orig_rate_name = model_info["best_orig_rate_name"];
+    string best_orig_rate_name;
+    ASSERT(model_info.getString("best_orig_rate_name", best_orig_rate_name));
 
     // (cancel) Step 2: do tree search for this single-class model
     // runTreeReconstruction(params, iqtree);
     // curr_df = iqtree->getModelFactory()->getNParameters(BRLEN_OPTIMIZE);
     // curr_loglike = iqtree->getCurScore();
     // curr_score = computeInformationScore(curr_loglike, curr_df, ssize, params.model_test_criterion);
-    string best_model_logl_df = model_info[best_subst_name+best_rate_name];
+    string best_model_logl_df;
+    ASSERT(model_info.getString(best_subst_name+best_rate_name, best_model_logl_df));
     stringstream ss (best_model_logl_df);
     ss >> curr_loglike >> curr_df;
-    string best_score = model_info["best_score_" + criteria_str];
+    string best_score;
+    ASSERT(model_info.getString("best_score_" + criteria_str, best_score));
     curr_score = convert_double(best_score.c_str());
 
     cout << endl << "Model: " << best_subst_name << best_rate_name << "; df: " << curr_df << "; loglike: " << curr_loglike << "; " << criteria_str << " score: " << curr_score << endl;
@@ -6622,7 +6625,7 @@ void runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &mode
     
     // overwrite the checkpoint by the best models
     ModelCheckpoint best_model_info;
-    model_info.getSubCheckpoint(&best_model_info, "BestOfTheKClass");
+    model_info.getSubCheckpoint(&best_model_info, model_info.getStructName() + "BestOfTheKClass");
     model_info.putSubCheckpoint(&best_model_info, "");
     
     best_subst_name = model_str;
@@ -6649,13 +6652,6 @@ void runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &mode
     
     // force to dump all checkpointing information
     model_info.dump(true);
-
-    // transfer models parameters
-    Checkpoint *orig_checkpoint;
-    orig_checkpoint = iqtree->getCheckpoint();
-    iqtree->setCheckpoint(&model_info);
-    transferModelFinderParameters(iqtree, orig_checkpoint);
-    iqtree->setCheckpoint(orig_checkpoint);
 }
 
 // Optimisation of Q-Mixture model, including estimation of best number of classes in the mixture
@@ -6670,6 +6666,7 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
     if (!mix_finder_mode)
         return;
     
+    string orig_model_name = params.model_name;
     bool test_only = (params.model_name == "MIX+MF" || params.model_name == "MF+MIX");
     
     if (MPIHelper::getInstance().getNumProcesses() > 1)
@@ -6677,9 +6674,10 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
     
     if (iqtree->isSuperTree()) {
         SuperAlignment* saln = (SuperAlignment*)iqtree->aln;
-        if (saln->partitions.size() == 1)
+        if (saln->partitions.size() == 1) {
             aln = saln->partitions[0];
-        else
+            model_info.startStruct(aln->name);
+        } else
             outError("Error! The option -m '" + params.model_name + "' cannot work on data set with more than one partition");
     } else {
         aln = iqtree->aln;
@@ -6724,6 +6722,26 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
 
     runMixtureFinderMain(params, new_iqtree, model_info, model_str);
     
+    // transfer models parameters
+    Checkpoint *iqtree_chkpt = iqtree->getCheckpoint();
+    if (iqtree->isSuperTree()) {
+        string partmodel_name;
+        if (params.partition_type == BRLEN_SCALE || params.partition_type == BRLEN_FIX)
+            partmodel_name = "PartitionModelPlen";
+        else
+            partmodel_name = "PartitionModel";
+        iqtree_chkpt->startStruct(partmodel_name);
+    }
+    string structname = model_info.getStructName();
+    model_info.transferSubCheckpoint(iqtree_chkpt, structname + "Model", true);
+    model_info.transferSubCheckpoint(iqtree_chkpt, structname + "Rate", true);
+    model_info.transferSubCheckpoint(iqtree_chkpt, structname + "PhyloTree", true);
+    model_info.transferSubCheckpoint(iqtree_chkpt, structname + "best_model_", true);
+    model_info.transferSubCheckpoint(iqtree_chkpt, structname + "best_score_", true);
+    if (iqtree->isSuperTree()) {
+        iqtree_chkpt->endStruct();
+    }
+
     // restore the original values
     params.gbo_replicates = orig_gbo_replicates;
     params.consensus_type = orig_consensus_type;
@@ -6733,14 +6751,26 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
     cout << "  Best-fit Q-Mixture model: " << model_str << endl;
     cout << "-------------------------------------------------------" << endl;
 
-    params.model_name = model_str;
     iqtree->aln->model_name = model_str;
     if (!iqtree->isSuperTree()) {
-        iqtree->copyPhyloTree(new_iqtree, false);
+        // alignment with no partition
+        iqtree->readTreeString(new_iqtree->getTreeString());
     } else {
+        // partitioned alignment
         ((PhyloSuperTree*)iqtree)->at(0)->aln->model_name = model_str;
-        ((PhyloSuperTree*)iqtree)->at(0)->copyPhyloTree(new_iqtree, false);
+        // ((PhyloSuperTree*)iqtree)->at(0)->readTreeString(new_iqtree->getTreeString());
+        if (params.partition_type == BRLEN_SCALE || params.partition_type == BRLEN_FIX)
+            ((PhyloSuperTree*)iqtree)->readTreeString(new_iqtree->getTreeString());
+        else
+            ((PhyloSuperTreeUnlinked*)iqtree)->readTreeString(new_iqtree->getTreeString()+new_iqtree->getTreeString());
+        model_info.endStruct();
+        
+        ((SuperAlignment*)iqtree->aln)->printBestPartition((string(params.out_prefix) + ".best_scheme.nex").c_str());
+        ((SuperAlignment*)iqtree->aln)->printBestPartitionRaxml((string(params.out_prefix) + ".best_scheme").c_str());
     }
+    
+    params.model_name = orig_model_name;
+    iqtree->saveCheckpoint();
     
     delete(new_iqtree);
 
