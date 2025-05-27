@@ -248,7 +248,7 @@ void generateRandomTree(Params &params, ostream &out)
 
         if (params.tree_gen == YULE_HARDING || params.tree_gen == CATERPILLAR ||
             params.tree_gen == BALANCED || params.tree_gen == UNIFORM || params.tree_gen == STAR_TREE || params.tree_gen == BIRTH_DEATH) {
-            if (MPIHelper::getInstance().isMaster() && params.user_file!="" && fileExists(params.user_file) && !params.ignore_checkpoint)
+            if (MPIHelper::getInstance().isMaster() && params.user_file!="" && !params.ignore_checkpoint)
             {
                 string tmp_str(params.user_file);
                 outError(tmp_str + " exists. Use `-redo` option if you want to overwrite it.");
@@ -283,7 +283,7 @@ void generateRandomTree(Params &params, ostream &out)
             default: break;
             }
             ofstream out2;
-            if (params.num_zero_len && params.user_file != "") {
+            if (params.num_zero_len) {
                 cout << "Setting " << params.num_zero_len << " internal branches to zero length..." << endl;
                 string str = params.user_file;
                 str += ".collapsed";
@@ -309,12 +309,10 @@ void generateRandomTree(Params &params, ostream &out)
                 out << endl;
             }
             // out.close();
-            if (params.user_file != "") {
-                cout << params.repeated_time << " tree(s) printed to " << params.user_file << endl;
-                if (params.num_zero_len) {
-                    out2.close();
-                    cout << params.repeated_time << " collapsed tree(s) printed to " << params.user_file << ".collapsed" << endl;
-                }
+            cout << params.repeated_time << " tree(s) printed to " << params.user_file << endl;
+            if (params.num_zero_len) {
+                out2.close();
+                cout << params.repeated_time << " collapsed tree(s) printed to " << params.user_file << ".collapsed" << endl;
             }
         }
         // Generate random trees if optioned
@@ -340,9 +338,7 @@ void generateRandomTree(Params &params, ostream &out)
     } catch (bad_alloc) {
         outError(ERR_NO_MEMORY);
     } catch (ios::failure) {
-        string str = params.user_file;
-        str += ".collapsed";
-        outError(ERR_WRITE_OUTPUT, str);
+        outError(ERR_WRITE_OUTPUT, params.user_file);
     }
 
     // calculate the distance
