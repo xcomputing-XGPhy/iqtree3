@@ -1,4 +1,4 @@
-#include "libiqtree2_fun.h"
+#include "libiqtree_fun.h"
 
 #if defined WIN32 || defined _WIN32 || defined __WIN32__ || defined WIN64
 #include <winsock2.h>

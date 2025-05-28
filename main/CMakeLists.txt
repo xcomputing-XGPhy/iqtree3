@@ -14,8 +14,8 @@ if (BUILD_LIB)
     terraceanalysis.h
     suppFunc.cpp
     suppFunc.h
-    libiqtree2_fun.cpp
-    libiqtree2_fun.h
+    libiqtree_fun.cpp
+    libiqtree_fun.h
     )
 else()
     add_library(main
