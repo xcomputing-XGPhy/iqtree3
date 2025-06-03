@@ -264,6 +264,19 @@ void reportReferences(Params &params, ofstream &out) {
 }
 
 void reportAlignment(ofstream &out, Alignment &alignment, int nremoved_seqs) {
+    if (alignment.sequence_type.empty()) {
+        out << "Alignment sequence type is not asigned by user. Alignment most likely contains ";
+        switch (alignment.seq_type) {
+            case SEQ_BINARY: out << "binary"; break;
+            case SEQ_DNA: out << "nucleotide"; break;
+            case SEQ_PROTEIN: out << "amino-acid"; break;
+            case SEQ_CODON: out << "codon"; break;
+            case SEQ_MORPH: out << "morphological"; break;
+            case SEQ_POMO: out << "PoMo"; break;
+            default: out << "unknown"; break;
+        }
+        out << " sequences" << endl;
+    }
     out << "Input data: " << alignment.getNSeq()+nremoved_seqs << " sequences with "
             << alignment.getNSite() << " ";
     switch (alignment.seq_type) {
@@ -1364,7 +1377,6 @@ void reportSubstitutionProcess(ostream &out, Params &params, IQTree &tree)
 
         PhyloSuperTree *stree = (PhyloSuperTree*) &tree;
         PhyloSuperTree::iterator it;
-        it = stree->begin();
 
         int part;
 
