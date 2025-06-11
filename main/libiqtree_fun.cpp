@@ -373,6 +373,92 @@ extern "C" StringResult build_njtree(StringArray& cnames, DoubleArray& distances
     return output;
 }
 
+/*
+ * Compute a consensus tree
+ * trees -- a set of input trees
+ * minsup -- a threshold to build the majority consensus, default is 0.0
+ * output: the consensus tree of the set of input trees
+ */
+extern "C" StringResult consensus_tree(StringArray& trees, double minsup) {
+
+    StringResult output;
+    output.errorStr = strdup("");
+
+    try {
+
+       	// convert to vector
+       	vector<string> trees_vec;
+		for (int i = 0; i < trees.length; i++) {
+			trees_vec.push_back(string(trees.strings[i]));
+		}
+		if (trees.length < 1) {
+		    outError("Error! The number of input trees < 1");
+		}
+
+        Params params = Params::getInstance();
+        params.setDefault();
+        params.split_threshold = minsup;
+        bool rooted = false;
+
+        // // get a set of taxa names
+        vector<string> taxa_names;
+        MTree mtree;
+        mtree.read_TreeString(trees_vec[0], rooted);
+        mtree.getTaxaName(taxa_names);
+
+        // read the trees
+        MTreeSet boot_trees;
+        boot_trees.init(trees_vec, taxa_names, rooted);
+
+        SplitGraph sg;
+        SplitIntMap hash_ss;
+        double scale = 100.0;
+        if (params.scaling_factor > 0)
+            scale = params.scaling_factor;
+        boot_trees.convertSplits(sg, params.split_threshold, SW_COUNT, params.split_weight_threshold);
+        scale /= boot_trees.sumTreeWeights();
+        cout << sg.size() << " splits found" << endl;
+
+        if (params.scaling_factor < 0)
+            sg.scaleWeight(scale, true);
+        else {
+            sg.scaleWeight(scale, false, params.numeric_precision);
+        }
+
+        MTree mytree;
+        SplitGraph maxsg;
+        sg.findMaxCompatibleSplits(maxsg);
+        mytree.convertToTree(maxsg);
+        if (!mytree.rooted) {
+            string taxname;
+            if (params.root)
+                taxname = params.root;
+            else
+                taxname = sg.getTaxa()->GetTaxonLabel(0);
+            Node *node = mytree.findLeafName(taxname);
+            if (node)
+                mytree.root = node;
+        }
+
+       	ostringstream ostring;
+        mytree.printTree(ostring, WT_BR_CLADE);
+        string s = ostring.str();
+        if (s.length() > 0) {
+            output.value = new char[s.length()+1];
+    	    strcpy(output.value, s.c_str());
+        }
+
+    } catch (const exception& e) {
+    	if (strlen(e.what()) > 0) {
+    	    output.errorStr = new char[strlen(e.what())+1];
+    	    strcpy(output.errorStr, e.what());
+    	}
+        // reset the output and error buffers
+        funcExit();
+    }
+    return output;
+}
+
 // verion number
 extern "C" StringResult version() {
     StringResult output;

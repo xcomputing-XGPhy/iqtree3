@@ -108,6 +108,14 @@ extern "C" DoubleArrayResult build_distmatrix(StringArray& names, StringArray& s
 extern "C" StringResult build_njtree(StringArray& names, DoubleArray& distances);
 
 /*
+ * Compute a consensus tree
+ * trees -- a set of input trees
+ * minsup -- a threshold to build the majority consensus, default is 0.0
+ * output: the consensus tree of the set of input trees
+ */
+extern "C" StringResult consensus_tree(StringArray& trees, double minsup = 0.0);
+
+/*
  * verion number
  */
 extern "C" StringResult version();
