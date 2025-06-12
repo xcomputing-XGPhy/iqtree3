@@ -1534,25 +1534,22 @@ void Alignment::regroupSitePattern(int groups, IntVector& site_group)
 	@return the data type of the input sequences
 */
 SeqType Alignment::detectSequenceType(StrVector &sequences) {
+    size_t num_proper_nuc = 0;
     size_t num_nuc   = 0;
     size_t num_aa    = 0;
     size_t num_bin   = 0;
     size_t num_digit = 0;
     size_t num_alpha = 0;
-    size_t num_A = 0;
-    size_t num_C = 0;
-    size_t num_G = 0;
-    size_t num_TU = 0;
     double detectStart = getRealTime();
     size_t sequenceCount = sequences.size();
+    std::unordered_set<char> proper_nucleotides = {'A', 'C', 'G', 'T', 'U'};
     std::unordered_set<char> nucleotides = {'A', 'C', 'G', 'T', 'U', 'R', 'Y', 'W', 'S', 'M', 'K', 'B', 'H', 'D', 'V', 'N', 'X'};
     std::unordered_set<char> proper_amino_acids = {'A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S',  'T', 'W', 'Y', 'V'};
-    std::unordered_set<char> rna = {'T', 'U'};
     std::unordered_set<char> binaries = {'0', '1'};
 //    std::unordered_set<char> gap_miss = {'?', '-', '.', '~'};
     
 #ifdef _OPENMP
-#pragma omp parallel for reduction(+:num_nuc,num_aa,num_bin,num_digit, num_alpha, num_A, num_C, num_G, num_TU)
+#pragma omp parallel for reduction(+:num_proper_nuc，num_nuc,num_aa,num_bin,num_digit, num_alpha)
 #endif
     for (size_t seqNum = 0; seqNum < sequenceCount; ++seqNum) {
         auto start = sequences.at(seqNum).data();
@@ -1561,16 +1558,10 @@ SeqType Alignment::detectSequenceType(StrVector &sequences) {
 //            if (gap_miss.find(*i) != gap_miss.end()) {
 //                continue;
 //            }
+            if (proper_nucleotides.find(*i) != proper_nucleotides.end())
+                num_proper_nuc++;
             if (nucleotides.find(*i) != nucleotides.end())
                 num_nuc++;
-            if ((*i) == 'A')
-                num_A++;
-            if ((*i) == 'C')
-                num_C++;
-            if ((*i) == 'G')
-                num_G++;
-            if (rna.find(*i) != rna.end())
-                num_TU++;
             if (proper_amino_acids.find(*i) != proper_amino_acids.end())
                 num_aa++;
             if (binaries.find(*i) != binaries.end())
@@ -1587,13 +1578,19 @@ SeqType Alignment::detectSequenceType(StrVector &sequences) {
     if (num_digit == 0) {
         if (num_alpha < 10) // two few occurences to decide
             return SEQ_UNKNOWN;
-        if (num_nuc == num_alpha && num_A > 0 && num_C > 0 && num_G > 0 && num_TU > 0)
-            return SEQ_DNA;
-        
+        if (num_nuc == num_alpha) {
+            if ((double)num_proper_nuc / num_alpha > 0.9) {
+                return SEQ_DNA;      
+            } else {
+                return SEQ_UNKNOWN;
+            }
+        }       
         // likely protein if there are only letters
         // TODO: check if this condition is OK
         if ((double)num_aa / num_alpha > 0.9)
             return SEQ_PROTEIN;
+        else
+            return SEQ_UNKNOWN;
     } else if (num_digit >= 10) {
         // there are some digit(s) in the data
         if (num_bin == (num_digit+num_alpha)) // For binary data, only 0, 1, ?, -, . can occur
