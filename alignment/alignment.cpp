@@ -1549,7 +1549,7 @@ SeqType Alignment::detectSequenceType(StrVector &sequences) {
 //    std::unordered_set<char> gap_miss = {'?', '-', '.', '~'};
     
 #ifdef _OPENMP
-#pragma omp parallel for reduction(+:num_proper_nuc，num_nuc,num_aa,num_bin,num_digit, num_alpha)
+#pragma omp parallel for reduction(+:num_proper_nuc, num_nuc, num_aa, num_bin, num_digit, num_alpha)
 #endif
     for (size_t seqNum = 0; seqNum < sequenceCount; ++seqNum) {
         auto start = sequences.at(seqNum).data();
