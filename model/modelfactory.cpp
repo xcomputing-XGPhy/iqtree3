@@ -1222,16 +1222,10 @@ void ModelFactory::initFromClassMinusOne(double init_weight) {
     int nmix = model->getNMixtures();
     if (nmix > 1) {
         model->initFromClassMinusOne(init_weight);
-        checkpoint->startStruct("BestOfTheKClass");
-        if (nmix > 2) {
-            checkpoint->startStruct("ModelMixture" + convertIntToString(nmix-1));
-        }
+        site_rate->getCheckpoint()->startStruct("BestOfThe" + convertIntToString(nmix-1) + "Class");
         site_rate->restoreCheckpoint();
         site_rate->phylo_tree->restoreCheckpoint();
-        if (nmix > 2) {
-            checkpoint->endStruct();
-        }
-        checkpoint->endStruct();
+        site_rate->getCheckpoint()->endStruct();
     }
 }
 
