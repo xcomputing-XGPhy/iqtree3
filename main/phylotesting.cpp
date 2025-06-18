@@ -6513,8 +6513,9 @@ CandidateModel findMixtureComponent(Params &params, IQTree &iqtree, ModelCheckpo
  @param[in] iqtree phylogenetic tree
  @param[in,out] model_info (IN/OUT) information for all models considered
  @param[out] model_str name of the best-fit Q mixture model
+ @return the likelihood from the optimal mixture model
  */
-void runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &model_info, string& model_str) {
+double runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &model_info, string& model_str) {
 
     bool do_init_tree;
     string best_subst_name;
@@ -6664,6 +6665,9 @@ void runMixtureFinderMain(Params &params, IQTree* &iqtree, ModelCheckpoint &mode
     
     // force to dump all checkpointing information
     model_info.dump(true);
+    
+    cout << "BEST log-likelihood value: " << curr_loglike << endl;
+    return curr_loglike;
 }
 
 // Optimisation of Q-Mixture model, including estimation of best number of classes in the mixture
@@ -6672,6 +6676,7 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
     IQTree* new_iqtree;
     string model_str;
     Alignment* aln;
+    double best_loglike;
 
     bool mix_finder_mode = (params.model_name == "MIX+MF" || params.model_name == "MIX+MFP" || params.model_name == "MF+MIX" || params.model_name == "MFP+MIX");
     
@@ -6732,7 +6737,7 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
     params.stop_condition = SC_UNSUCCESS_ITERATION;
     params.model_name = "";
 
-    runMixtureFinderMain(params, new_iqtree, model_info, model_str);
+    best_loglike = runMixtureFinderMain(params, new_iqtree, model_info, model_str);
     
     // transfer models parameters
     Checkpoint *iqtree_chkpt = iqtree->getCheckpoint();
@@ -6753,6 +6758,9 @@ void runMixtureFinder(Params &params, IQTree* &iqtree, ModelCheckpoint &model_in
     if (iqtree->isSuperTree()) {
         iqtree_chkpt->endStruct();
     }
+    
+    // store the best loglikelihood
+    iqtree_chkpt->put("MixFinderLogL", best_loglike);
 
     // restore the original values
     params.gbo_replicates = orig_gbo_replicates;
