@@ -1126,10 +1126,9 @@ bool ModelFactory::initFromNestedModel(map<string, vector<string> > nest_network
         */
 
         for (i = 0; i < nested_models.size(); i++) {
-            map<string, string>::iterator itr = checkpoint->find(nested_models[i] + rate_name);
-            ASSERT(itr != checkpoint->end());
-
-            string best_model_logl_df = itr->second;
+            string best_model_logl_df;
+            bool check = checkpoint->getString(nested_models[i] + rate_name, best_model_logl_df);
+            ASSERT(check);
             stringstream ss(best_model_logl_df);
             ss >> cur_logl;
 
@@ -1178,10 +1177,9 @@ bool ModelFactory::initFromNestedModel(map<string, vector<string> > nest_network
 
         for (i = 0; i < nested_models.size(); i++) {
             nested_mix_model = replaceLastQ(model_name, nested_models[i]);
-            map<string, string>::iterator itr = checkpoint->find(nested_mix_model + rate_name);
-            ASSERT(itr != checkpoint->end());
-
-            string best_model_logl_df = itr->second;
+            string best_model_logl_df;
+            bool check = checkpoint->getString(nested_mix_model + rate_name, best_model_logl_df);
+            ASSERT(check);
             stringstream ss(best_model_logl_df);
             ss >> cur_logl;
 
@@ -1226,16 +1224,10 @@ void ModelFactory::initFromClassMinusOne(double init_weight) {
     int nmix = model->getNMixtures();
     if (nmix > 1) {
         model->initFromClassMinusOne(init_weight);
-        checkpoint->startStruct("BestOfTheKClass");
-        if (nmix > 2) {
-            checkpoint->startStruct("ModelMixture" + convertIntToString(nmix-1));
-        }
+        site_rate->getCheckpoint()->startStruct("BestOfThe" + convertIntToString(nmix-1) + "Class");
         site_rate->restoreCheckpoint();
         site_rate->phylo_tree->restoreCheckpoint();
-        if (nmix > 2) {
-            checkpoint->endStruct();
-        }
-        checkpoint->endStruct();
+        site_rate->getCheckpoint()->endStruct();
     }
 }
 
@@ -1609,11 +1601,11 @@ double ModelFactory::optimizeParameters(int fixed_len, bool write_info,
     //bool optimize_rate = true;
 //    double gradient_epsilon = min(logl_epsilon, 0.01); // epsilon for parameters starts at epsilon for logl
     
-    // for mixture model, increase the maximum number of iterations
-    if (model->isMixture()) {
-        tree->params->num_param_iterations = model->getNMixtures() * 100;
-        // cout << "tree->params->num_param_iterations has increased to " << tree->params->num_param_iterations << endl;
-    }
+//    // for mixture model, increase the maximum number of iterations
+//    if (model->isMixture()) {
+//        tree->params->num_param_iterations = model->getNMixtures() * 100;
+//        // cout << "tree->params->num_param_iterations has increased to " << tree->params->num_param_iterations << endl;
+//    }
     
 #ifdef _IQTREE_MPI
     // synchronize the checkpoints of the other processors
