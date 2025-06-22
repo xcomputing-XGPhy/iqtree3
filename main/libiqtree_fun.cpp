@@ -386,6 +386,8 @@ extern "C" StringResult consensus_tree(StringArray& trees, double minsup) {
 
     try {
 
+        double max_split_threshold = 0.9999;
+
        	// convert to vector
        	vector<string> trees_vec;
 		for (int i = 0; i < trees.length; i++) {
@@ -398,6 +400,8 @@ extern "C" StringResult consensus_tree(StringArray& trees, double minsup) {
         Params params = Params::getInstance();
         params.setDefault();
         params.split_threshold = minsup;
+        if (params.split_threshold > max_split_threshold)
+        	params.split_threshold = max_split_threshold;
         bool rooted = false;
 
         // // get a set of taxa names
