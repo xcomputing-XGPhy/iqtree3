@@ -3204,7 +3204,11 @@ pair<int, int> IQTree::optimizeNNI(bool speedNNI) {
         }
         trackProgress(1);
     }
-    doneProgress();
+    bool showMsg = false;
+    if (verbose_mode >= VB_MED) {
+        showMsg = true;
+    }
+    doneProgress(showMsg);
 
     if (totalNNIApplied == 0 && verbose_mode >= VB_MED) {
         cout << "NOTE: Input tree is already NNI-optimal" << endl;
