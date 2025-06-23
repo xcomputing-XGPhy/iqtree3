@@ -1,5 +1,6 @@
 if (BUILD_LIB)
     add_library(main
+    main.cpp
     phyloanalysis.cpp
     phyloanalysis.h
     phylotesting.cpp
@@ -12,8 +13,6 @@ if (BUILD_LIB)
     alisim.h
     terraceanalysis.cpp
     terraceanalysis.h
-    suppFunc.cpp
-    suppFunc.h
     libiqtree_fun.cpp
     libiqtree_fun.h
     )

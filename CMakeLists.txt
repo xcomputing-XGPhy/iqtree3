@@ -82,7 +82,7 @@ project(iqtree)
 add_definitions(-DIQ_TREE)
 
 # Require position independent code for IQ-TREE to be used as a library 
-if (BUILD_LIB STREQUAL "ON")
+if (BUILD_LIB)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
@@ -139,7 +139,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Release")
     message("Build mode   : Release")
 endif()
 
-if (BUILD_LIB STREQUAL "ON")
+if (BUILD_LIB)
     message("Build lib    : ON")
 else()
     message("Build lib    : OFF")
@@ -252,7 +252,7 @@ endif()
 
 option(USE_CMAPLE_AA "Integrate CMAPLE-AA" OFF)
 
-if (BUILD_LIB STREQUAL "ON")
+if (BUILD_LIB)
     set(USE_CMAPLE "OFF")
     set(USE_CMAPLE_AA "OFF")
 endif()
@@ -282,7 +282,7 @@ endif()
 ##################################################################
 option(BUILD_LIB "Build IQTREE library" OFF)
 
-if (BUILD_LIB STREQUAL "ON")
+if (BUILD_LIB)
     message("Build IQTREE library: ON")
     add_definitions(-DBUILD_LIB)
 else()
@@ -539,7 +539,7 @@ if (NOT IQTREE_FLAGS MATCHES "single")
       if (__ARM_NEON)
         link_directories(${PROJECT_SOURCE_DIR}/liblinux_arm)
         LIST(APPEND STATIC_LIBS "${PROJECT_SOURCE_DIR}/liblinux_arm/libomp.a" "${PROJECT_SOURCE_DIR}/liblinux_arm/libz.a")
-      elseif(BUILD_LIB STREQUAL "ON")
+      elseif(BUILD_LIB)
         find_package(OpenMP)
       else()
         link_directories(${PROJECT_SOURCE_DIR}/lib)
@@ -864,7 +864,7 @@ add_subdirectory(main)
 ##################################################################
 # build lib file or main executable
 ##################################################################
-if (BUILD_LIB STREQUAL "ON")
+if (BUILD_LIB)
     add_library(iqtree3
         obsolete/parsmultistate.cpp
         obsolete/parsmultistate.h
@@ -1071,7 +1071,7 @@ else()
     set (BINARY_DIR "${PROJECT_BINARY_DIR}")
 endif()
 
-if (NOT BUILD_LIB STREQUAL "ON" AND WIN32)
+if (NOT BUILD_LIB AND WIN32)
     if (MSVC)
         if (CLANG_UNDER_VS)
             ADD_CUSTOM_COMMAND(TARGET iqtree3 POST_BUILD COMMAND copy "iqtree3${EXE_SUFFIX}.exe" "iqtree3${EXE_SUFFIX}-click.exe")
@@ -1096,7 +1096,7 @@ endif()
 # CREATE A STATIC LIBRARY
 ##############################################################
 
-if (BUILD_LIB STREQUAL "ON")
+if (BUILD_LIB)
     if(APPLE)
         add_custom_command(
             TARGET iqtree3 POST_BUILD
