@@ -3949,6 +3949,10 @@ void runTreeReconstruction(Params &params, IQTree* &iqtree) {
         cout << "Recomputing the log-likelihood of the intermediate trees ... " << endl;
         iqtree->intermediateTrees.recomputeLoglOfAllTrees(*iqtree);
     }
+    //check for dating with LSD2
+    if (params.dating_method == "LSD") {
+        doTimeTree(iqtree);
+    }
     //check for dating with MCMCTree
     if (params.dating_method == "mcmctree")
     {
