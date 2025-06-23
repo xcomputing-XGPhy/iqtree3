@@ -3735,9 +3735,9 @@ double PhyloTree::computeObsDist(double *dist_mat) {
             }
         }
     }
-    #ifdef _OPENMP
-    #pragma omp parallel for schedule(dynamic)
-    #endif
+//    #ifdef _OPENMP
+//    #pragma omp parallel for schedule(dynamic)
+//    #endif
     for (size_t seq1 = 0; seq1 < nseqs; ++seq1) {
         size_t pos = seq1*nseqs;
         for (size_t seq2 = 0; seq2 < seq1; ++seq2, ++pos) {
