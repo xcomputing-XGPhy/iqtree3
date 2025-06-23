@@ -6,7 +6,7 @@
 #include "utils/tools.h"
 #include "main/alisim.h"
 #include "utils/starttree.h"
-#include "suppFunc.h"
+//#include "suppFunc.h"
 #include <vector>
 #include <string>
 #include <cstring>
