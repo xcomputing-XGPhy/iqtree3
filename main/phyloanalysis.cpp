@@ -2420,9 +2420,18 @@ void initializeParams(Params &params, IQTree &iqtree)
     if (!ok_tree)
     {
         // compute initial tree
-        if (!params.compute_ml_tree_only) {
-            iqtree.computeInitialTree(params.SSE);
+        stringstream* ss = nullptr;
+        if (params.intree_str != "") {
+            ss = new stringstream(params.intree_str);
         }
+        if (!params.compute_ml_tree_only) {
+            if (iqtree.isTreeMix())
+                ((IQTreeMix*) &iqtree)->computeInitialTree(params.SSE);
+            else
+                iqtree.computeInitialTree(params.SSE, ss);
+        }
+        if (ss != nullptr)
+            delete ss;
     }
     ASSERT(iqtree.aln);
 
@@ -3965,6 +3974,10 @@ void runTreeReconstruction(Params &params, IQTree* &iqtree) {
         cout << "Recomputing the log-likelihood of the intermediate trees ... " << endl;
         iqtree->intermediateTrees.recomputeLoglOfAllTrees(*iqtree);
     }
+    //check for dating with LSD2
+    if (params.dating_method == "LSD") {
+        doTimeTree(iqtree);
+    }
     //check for dating with MCMCTree
     if (params.dating_method == "mcmctree")
     {
@@ -5087,7 +5100,7 @@ void doSymTest(Alignment *alignment, Params &params) {
         exit(EXIT_SUCCESS);
 }
 
-void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Alignment *&alignment)
+void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Alignment *&alignment, bool align_is_given, ModelCheckpoint *model_info)
 {
     checkpoint->putBool("finished", false);
     checkpoint->setDumpInterval(params.checkpoint_dump_interval);
@@ -5095,12 +5108,14 @@ void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Ali
     /****************** read in alignment **********************/
     if (params.partition_file) {
         // Partition model analysis
-        if (params.partition_type == TOPO_UNLINKED)
-            alignment = new SuperAlignmentUnlinked(params);
-        else
-            alignment = new SuperAlignment(params);
+        if (!align_is_given)
+            if (params.partition_type == TOPO_UNLINKED)
+                alignment = new SuperAlignmentUnlinked(params);
+            else
+                alignment = new SuperAlignment(params);
     } else {
-        alignment = createAlignment(params.aln_file, params.sequence_type, params.intype, params.model_name);
+        if (!align_is_given)
+            alignment = createAlignment(params.aln_file, params.sequence_type, params.intype, params.model_name);
 
         if (params.freq_const_patterns) {
             int orig_nsite = alignment->getNSite();
@@ -5228,7 +5243,11 @@ void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Ali
     /********************************************************************************
                     THE MAIN MAXIMUM LIKELIHOOD TREE RECONSTRUCTION
      ********************************************************************************/
-        ModelCheckpoint *model_info = new ModelCheckpoint;
+        bool create_model_info = false;
+        if (model_info == NULL) {
+            model_info = new ModelCheckpoint;
+            create_model_info = true;
+        }
         alignment->checkGappySeq(params.remove_empty_seq);
 
         // remove identical sequences
@@ -5263,7 +5282,8 @@ void runPhyloAnalysis(Params &params, Checkpoint *checkpoint, IQTree *&tree, Ali
             tree->insertTaxa(tree->removed_seqs, tree->twin_seqs);
             tree->printResultTree();
         }
-        delete model_info;
+        if (create_model_info)
+            delete model_info;
 
     } else {
         // the classical non-parameter bootstrap (SBS)

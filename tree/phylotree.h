@@ -2545,7 +2545,7 @@ protected:
     void trackProgress(double amount);
     void hideProgress();
     void showProgress();
-    void doneProgress();
+    void doneProgress(bool showMsg = true);
 };
 
 #endif
