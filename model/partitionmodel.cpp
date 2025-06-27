@@ -565,7 +565,8 @@ double PartitionModel::computeMarginalLh() {
                 sub_tree2->aln = NULL;
                 delete sub_tree2;
                 delete[] ptn_lh_array;
-            } else {
+            } else if (tree2->getModel()->isReversible()) {
+                // case when the intersection of taxon sets is 1
                 for (int l = 0; l < tree1_nsite; l++) {
                     double site_lh = 0.0;
                     Pattern p = tree1_aln->at(tree1_aln->getPatternID(l));
@@ -599,6 +600,9 @@ double PartitionModel::computeMarginalLh() {
                     }
                     lh_array[tree1_nsite * k + l] = site_lh;
                 }
+            } else {
+                // intersection has only 1 taxon and non-reversible model
+                outError("mAIC calculation doesn't work yet for intersection of 1 taxon and non-reversible model");
             }
             delete[] state_freq;
         }

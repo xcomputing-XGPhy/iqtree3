@@ -264,19 +264,6 @@ void reportReferences(Params &params, ofstream &out) {
 }
 
 void reportAlignment(ofstream &out, Alignment &alignment, int nremoved_seqs) {
-    if (alignment.sequence_type.empty()) {
-        out << "Alignment sequence type is not asigned by user. Alignment most likely contains ";
-        switch (alignment.seq_type) {
-            case SEQ_BINARY: out << "binary"; break;
-            case SEQ_DNA: out << "nucleotide"; break;
-            case SEQ_PROTEIN: out << "amino-acid"; break;
-            case SEQ_CODON: out << "codon"; break;
-            case SEQ_MORPH: out << "morphological"; break;
-            case SEQ_POMO: out << "PoMo"; break;
-            default: out << "unknown"; break;
-        }
-        out << " sequences" << endl;
-    }
     out << "Input data: " << alignment.getNSeq()+nremoved_seqs << " sequences with "
             << alignment.getNSite() << " ";
     switch (alignment.seq_type) {
@@ -936,7 +923,7 @@ void reportTree(ofstream &out, Params &params, PhyloTree &tree, double tree_lh, 
     out << "Bayesian information criterion (BIC) score: " << BIC_score << endl;
 
     // mAIC report
-    if (tree.isSuperTree() && params.partition_type != TOPO_UNLINKED) {
+    if (tree.isSuperTree() && params.partition_type != TOPO_UNLINKED && !params.contain_nonrev) {
         // compute mAIC/mBIC/mAICc if it is a partition model
         int ntrees; //mix_df;
         double mix_lh;
@@ -1491,6 +1478,11 @@ void reportPhyloAnalysis(Params &params, IQTree &tree, ModelCheckpoint &model_in
 
         out << "SEQUENCE ALIGNMENT" << endl << "------------------" << endl
                 << endl;
+        
+        if (tree.aln->sequence_type.empty()) {
+            out << "NOTE: Alignment sequence type is auto-detected. If in doubt, specify it via -st option." << endl;
+        }
+        
         if (tree.isSuperTree()) {
       // TODO DS: Changes may be needed here for PoMo.
             out << "Input data: " << tree.aln->getNSeq()+tree.removed_seqs.size() << " taxa with "
