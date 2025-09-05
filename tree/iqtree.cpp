@@ -879,7 +879,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
             treeString = getTreeString();
         }
         score = getCurScore();
-        cout << "current init tree score: "<< score << endl;
+        //cout << "current init tree score: "<< score << endl;
         candidateTrees.update(treeString,score);
     }
 
@@ -2294,7 +2294,7 @@ double IQTree::doTreeSearch() {
     cout << "Number of trees per process: " << treesPerProc << endl;
     cout << "Number of trees in candidate set: " << candidateTrees.size() << endl;
     cout << "Total number of trees to be generated: " << params->numInitTrees << endl;
-    
+
     /* Initialize candidate tree set */
     if (!getCheckpoint()->getBool("finishedCandidateSet")) {
         initCandidateTreeSet(treesPerProc, params->numNNITrees);
