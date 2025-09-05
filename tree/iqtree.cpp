@@ -846,6 +846,8 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
 //            }
             addTreeToCandidateSet(randTree, -DBL_MAX, false, MPIHelper::getInstance().getProcessID());
         }
+        cout << candidateTrees.getBestScore() << " (" << treeNr << "/" << nParTrees << ")\r";
+        cout.flush();
     }
 
 
@@ -858,10 +860,10 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
 
     vector<string> initTreeStrings = candidateTrees.getBestTreeStrings();
     candidateTrees.clear();
-    
-    cout << "Computing log-likelihood of " << initTreeStrings.size() << " initial trees... " << endl;
-    for(string s: initTreeStrings)
-        cout << s << endl;
+
+    // cout << "Computing log-likelihood of " << initTreeStrings.size() << " initial trees... " << endl;
+    // for(string s: initTreeStrings)
+    //     cout << s << endl;
 
     if (init_size < initTreeStrings.size())
         cout << "Computing log-likelihood of " << initTreeStrings.size() - init_size << " initial trees ... ";
