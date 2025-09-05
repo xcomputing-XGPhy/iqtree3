@@ -848,7 +848,6 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
         }
     }
 
-    can
 
     if (nParTrees > 0)
         cout << getRealTime() - startTime << " second" << endl;
@@ -859,6 +858,10 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
 
     vector<string> initTreeStrings = candidateTrees.getBestTreeStrings();
     candidateTrees.clear();
+    
+    cout << "Computing log-likelihood of " << initTreeStrings.size() << " initial trees... " << endl;
+    for(string s: initTreeStrings)
+        cout << s << endl;
 
     if (init_size < initTreeStrings.size())
         cout << "Computing log-likelihood of " << initTreeStrings.size() - init_size << " initial trees ... ";
