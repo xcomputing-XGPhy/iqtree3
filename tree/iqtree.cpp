@@ -791,6 +791,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
 #endif
 
     int init_size = candidateTrees.size();
+    cout << "Initial candidate tree set size: " << init_size << endl;
 
 //    unsigned long curNumTrees = candidateTrees.size();
     for (int treeNr = 1; treeNr <= nParTrees; treeNr++) {
