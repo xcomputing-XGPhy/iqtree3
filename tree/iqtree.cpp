@@ -2291,6 +2291,8 @@ double IQTree::doTreeSearch() {
 
     /* Initialize candidate tree set */
     if (!getCheckpoint()->getBool("finishedCandidateSet")) {
+        cout << "Number of numNNITrees: " << params->numNNITrees << endl;
+        cout << "Number of processes: " << MPIHelper::getInstance().getNumProcesses() << endl;
         initCandidateTreeSet(treesPerProc, params->numNNITrees);
         // write best tree to disk
         printBestCandidateTree();
