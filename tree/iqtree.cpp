@@ -846,8 +846,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
 //            }
             addTreeToCandidateSet(randTree, -DBL_MAX, false, MPIHelper::getInstance().getProcessID());
         }
-        cout << candidateTrees.getBestScore() << " (" << treeNr << "/" << nParTrees << ")\r";
-        cout.flush();
+       
     }
 
 
@@ -880,6 +879,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
             treeString = getTreeString();
         }
         score = getCurScore();
+        cout << "current init tree score: "<< score << endl;
         candidateTrees.update(treeString,score);
     }
 
