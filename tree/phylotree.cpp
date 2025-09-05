@@ -5778,7 +5778,7 @@ void PhyloTree::generateRandomTree(TreeGenType tree_type) {
     params->sub_size = orig_size;
     stringstream str;
     ext_tree.printTree(str);
-    cout << "Random tree: " << str.str() << endl;
+    // cout << "Random tree: " << str.str() << endl;
     PhyloTree::readTreeStringSeqName(str.str());
 }
 

@@ -848,6 +848,8 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
         }
     }
 
+    can
+
     if (nParTrees > 0)
         cout << getRealTime() - startTime << " second" << endl;
 
