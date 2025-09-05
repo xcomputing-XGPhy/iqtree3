@@ -2289,10 +2289,14 @@ double IQTree::doTreeSearch() {
     if (treesPerProc < 1 && params->numInitTrees > candidateTrees.size())
         treesPerProc = 1;
 
+    cout << "Number of numNNITrees: " << params->numNNITrees << endl;
+    cout << "Number of processes: " << MPIHelper::getInstance().getNumProcesses() << endl;
+    cout << "Number of trees per process: " << treesPerProc << endl;
+    cout << "Number of trees in candidate set: " << candidateTrees.size() << endl;
+    cout << "Total number of trees to be generated: " << params->numInitTrees << endl;
+    
     /* Initialize candidate tree set */
     if (!getCheckpoint()->getBool("finishedCandidateSet")) {
-        cout << "Number of numNNITrees: " << params->numNNITrees << endl;
-        cout << "Number of processes: " << MPIHelper::getInstance().getNumProcesses() << endl;
         initCandidateTreeSet(treesPerProc, params->numNNITrees);
         // write best tree to disk
         printBestCandidateTree();
