@@ -96,6 +96,10 @@ vector<string> CandidateSet::getBestTreeStrings(int numTree) {
     int cnt = numTree;
     for (reverse_iterator rit = rbegin(); rit != rend() && cnt > 0; rit++, cnt--) {
         res.push_back(rit->second.tree);
+        if(numTree != maxSize){
+        cout << "Score of best tree in CandidateSet: " << rit->first << endl;
+        cout << "Best tree in CandidateSet: " << rit->second.tree << endl;
+        }
     }
     return res;
 }
@@ -247,6 +251,7 @@ int CandidateSet::update(string newTree, double newScore) {
     if (treeTopologyExist(candidate.topology)) {
         // update new score if it is better the old score
         double oldScore = topologies[candidate.topology];
+        cout << "IN UPDATE: oldScore = " << oldScore << ", newScore = " << newScore << endl;
         if (oldScore < newScore) {
             removeCandidateTree(candidate.topology);
             insert(CandidateSet::value_type(newScore, candidate));
@@ -255,7 +260,8 @@ int CandidateSet::update(string newTree, double newScore) {
         ASSERT(topologies.size() == size());
         return -1;
     }
-
+    
+    cout << "IN UPDATE: new tree with score = " << newScore << endl;
     candidateTreeIt = insert(CandidateSet::value_type(newScore, candidate));
     topologies[candidate.topology] = newScore;
 
