@@ -867,11 +867,12 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
     if (init_size < initTreeStrings.size())
         cout << "Computing log-likelihood of " << initTreeStrings.size() - init_size << " initial trees ... ";
     startTime = getRealTime();
-
+    int cntInitTree = 0;
     for (vector<string>::iterator it = initTreeStrings.begin(); it != initTreeStrings.end(); ++it) {
         string treeString;
         double score;
         readTreeString(*it);
+        cntInitTree++;
         if (it-initTreeStrings.begin() >= init_size)
             treeString = optimizeBranches(params->brlen_num_traversal);
         else {
@@ -879,10 +880,16 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
             treeString = getTreeString();
         }
         score = getCurScore();
-        //cout << "current init tree score: "<< score << endl;
-        candidateTrees.update(treeString,score);
+        cout << cntInitTree << ". Current init tree score: "<< score << endl;
+        for(int i = 1; i <= 3; i++)
+        {
+        doNNISearch();
+        score = getCurScore();
+        cout << "Score after NNI" << i << " " <<": " << score << endl;
+        }
+        cout << "Result update treeset: " << candidateTrees.update(treeString,score) << endl;
     }
-
+    cout << candidateTrees.size() << " unique trees added to candidate set. ";
     if (Params::getInstance().writeDistImdTrees)
         intermediateTrees.initTrees(candidateTrees);
 
@@ -909,13 +916,29 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
 
     candidateTrees.setMaxSize(Params::getInstance().numSupportTrees);
     vector<string>::iterator it;
-
+    int cntBestTree = 0;
     for (it = bestInitTrees.begin(); it != bestInitTrees.end(); it++) {
         readTreeString(*it);
+        cntBestTree++;
+        cout << cntBestTree << endl;
+        double score = getCurScore();
+        cout << "Initial score: " << score << endl;
+        string treeString ;
+        if (it-initTreeStrings.begin() >= init_size)
+            treeString = optimizeBranches(params->brlen_num_traversal);
+        else {
+            computeLogL();
+            treeString = getTreeString();
+        }
+        cout << "Tree before NNI: " << treeString << endl;
 //        optimizeBranches();
 //        cout << "curScore: " << curScore << "  Tree before NNI: " << getTreeString() << endl;
+        cout << "curScore before NNI: " << score << endl;
         doNNISearch();
-        string treeString = getTreeString();
+        cout << "curScore after NNI: " << curScore << endl;
+        treeString = getTreeString();
+
+        cout << "Tree after NNI: " << treeString << endl;
         addTreeToCandidateSet(treeString, curScore, true, MPIHelper::getInstance().getProcessID());
         if (Params::getInstance().writeDistImdTrees)
             intermediateTrees.update(treeString, curScore);
