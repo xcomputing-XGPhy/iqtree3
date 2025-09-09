@@ -97,8 +97,8 @@ vector<string> CandidateSet::getBestTreeStrings(int numTree) {
     for (reverse_iterator rit = rbegin(); rit != rend() && cnt > 0; rit++, cnt--) {
         res.push_back(rit->second.tree);
         if(numTree != maxSize){
-        cout << "Score of best tree in CandidateSet: " << rit->first << endl;
-        cout << "Best tree in CandidateSet: " << rit->second.tree << endl;
+        cout << cnt << ".Score of best tree in CandidateSet: " << rit->first << endl;
+        //cout << "Best tree in CandidateSet: " << rit->second.tree << endl;
         }
     }
     return res;

@@ -1593,6 +1593,9 @@ void parseArg(int argc, char *argv[], Params &params) {
     params.alisim_insertion_distribution = IndelDistribution(ZIPF,1.7,100);
     params.alisim_deletion_distribution = IndelDistribution(ZIPF,1.7,100);
     params.alisim_mean_deletion_size = -1;
+    // Van mode defaults
+    params.van_mode = false;
+    params.van_nni_search_count = 3;
     params.alisim_simulation_thresh = 0.001;
     params.delay_msgs = "";
     params.alisim_no_export_sequence_wo_gaps = false;
@@ -1633,6 +1636,17 @@ void parseArg(int argc, char *argv[], Params &params) {
     
     for (cnt = 1; cnt < argc; cnt++) {
         try {
+            if (strcmp(argv[cnt], "-van") == 0) {
+                params.van_mode = true;
+                continue;
+            }
+            if (strcmp(argv[cnt], "-van_nni_count") == 0) {
+                cnt++;
+                if (cnt >= argc)
+                    throw "Use -van_nni_count <count>";
+                params.van_nni_search_count = convert_int(argv[cnt]);
+                continue;
+            }
 
             if (strcmp(argv[cnt], "-h") == 0 || strcmp(argv[cnt], "--help") == 0) {
 #ifdef IQ_TREE
