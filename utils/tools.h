@@ -620,6 +620,10 @@ extern int NNI_MAX_NR_STEP;
  */
 class Params {
 public:
+    // Enable van mode (per-tree result files)
+    bool van_mode = false;
+    // Number of NNI searches per generated tree in van mode
+    int van_nni_search_count = 0;
     static Params& getInstance();
 private:
     Params () {}; // Disable constructor
