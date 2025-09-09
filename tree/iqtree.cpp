@@ -868,13 +868,18 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
         cout << "Computing log-likelihood of " << initTreeStrings.size() - init_size << " initial trees ... ";
     startTime = getRealTime();
     int cntInitTree = 0;
+    int countBranchOpt = 0;
     for (vector<string>::iterator it = initTreeStrings.begin(); it != initTreeStrings.end(); ++it) {
         string treeString;
         double score;
         readTreeString(*it);
         cntInitTree++;
         if (it-initTreeStrings.begin() >= init_size)
-            treeString = optimizeBranches(params->brlen_num_traversal);
+            {
+                treeString = optimizeBranches(params->brlen_num_traversal);
+                countBranchOpt++;
+                cout << "Branch lengths optimized for tree " << cntInitTree << endl;
+            }
         else {
             computeLogL();
             treeString = getTreeString();
@@ -890,6 +895,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
         cout << "Result update treeset: " << candidateTrees.update(treeString,score) << endl;
     }
     cout << candidateTrees.size() << " unique trees added to candidate set. ";
+    cout << countBranchOpt << " trees had branch lengths optimized." << endl;
     if (Params::getInstance().writeDistImdTrees)
         intermediateTrees.initTrees(candidateTrees);
 
@@ -925,7 +931,10 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
         cout << "Initial score: " << score << endl;
         string treeString ;
         if (it-initTreeStrings.begin() >= init_size)
-            treeString = optimizeBranches(params->brlen_num_traversal);
+        {
+                treeString = optimizeBranches(params->brlen_num_traversal);
+                cout << "Branch lengths optimized" << endl;
+        }
         else {
             computeLogL();
             treeString = getTreeString();

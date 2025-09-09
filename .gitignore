@@ -13,7 +13,7 @@ test_scripts/iqtree_test
 tags
 test_scripts/iqtree_test_cmds.txt
 pllrepo/
-build/
+build/*
 /Default-clang
 .idea/
 .idea/codeStyleSettings.xml
@@ -34,3 +34,4 @@ vectorclass/
 zlib-1.2.7/
 /.direnv/
 /.envrc
+!build/iqtree3

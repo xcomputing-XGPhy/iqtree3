@@ -260,7 +260,7 @@ int CandidateSet::update(string newTree, double newScore) {
         ASSERT(topologies.size() == size());
         return -1;
     }
-    
+    if(newScore != -DBL_MAX)
     cout << "IN UPDATE: new tree with score = " << newScore << endl;
     candidateTreeIt = insert(CandidateSet::value_type(newScore, candidate));
     topologies[candidate.topology] = newScore;
