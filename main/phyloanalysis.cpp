@@ -3909,8 +3909,11 @@ void runTreeReconstruction(Params &params, IQTree* &iqtree) {
         cout << endl;
     }
 
+    if(!params.xgphyOn)
     cout << "BEST SCORE FOUND : " << iqtree->getCurScore() << endl;
-
+    else 
+    cout << "BEST SCORE FOUND : " << iqtree->getBestScore() << endl;
+    
     if (params.write_candidate_trees) {
         printTrees(iqtree->getBestTrees(), params, ".imd_trees");
     }
