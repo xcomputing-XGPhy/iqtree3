@@ -3828,8 +3828,11 @@ void runTreeReconstruction(Params &params, IQTree* &iqtree) {
         ((PhyloSuperTree*) iqtree)->printBestPartitionParams((string(params.out_prefix) + ".best_model.nex").c_str());
     }
 
+    if(!params.xgphyOn)
     cout << "BEST SCORE FOUND : " << iqtree->getCurScore() << endl;
-
+    else 
+    cout << "BEST SCORE FOUND : " << iqtree->getBestScore() << endl;
+    
     if (params.write_candidate_trees) {
         printTrees(iqtree->getBestTrees(), params, ".imd_trees");
     }

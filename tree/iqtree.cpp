@@ -791,6 +791,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
 #endif
 
     int init_size = candidateTrees.size();
+    if(params->xgphyOn)
     cout << "Initial candidate tree set size: " << init_size << endl;
 
 //    unsigned long curNumTrees = candidateTrees.size();
@@ -858,64 +859,81 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
     *****************************************************************************************/
 
     vector<string> initTreeStrings = candidateTrees.getBestTreeStrings();
-    candidateTrees.clear();
+    if(!params->xgphyOn)
+    candidateTrees.clear(); 
 
-    // cout << "Computing log-likelihood of " << initTreeStrings.size() << " initial trees... " << endl;
-    // for(string s: initTreeStrings)
-    //     cout << s << endl;
-
+    if(params->xgphyOn)
+    cout << "Each tree will doNNISearch " << Params::getInstance().xgphy_nni_search_count << " times." << endl;
+    
     if (init_size < initTreeStrings.size())
         cout << "Computing log-likelihood of " << initTreeStrings.size() - init_size << " initial trees ... ";
     startTime = getRealTime();
-    cout << "Each tree will doNNISearch " << Params::getInstance().van_nni_search_count << " times." << endl;
+
     int cntInitTree = 0;
     int countBranchOpt = 0;
-     // If van_mode, save result to a separate file
-    std::ofstream vanvan_file;
+     // If xgphy_mode, save result to a separate file
+    std::ofstream xgphy_file;
     std::string out_prefix = Params::getInstance().out_prefix ? Params::getInstance().out_prefix : "iqtree";
     for (vector<string>::iterator it = initTreeStrings.begin(); it != initTreeStrings.end(); ++it) {
-        std::string filename = out_prefix + ".tree" + std::to_string(cntInitTree) + ".vanvan";
-        if (Params::getInstance().van_mode) {
-            vanvan_file.open(filename, std::ios::out);
+        std::string filename = out_prefix + ".tree" + std::to_string(cntInitTree) + ".xgphy";
+        if (Params::getInstance().xgphyOn) {
+            xgphy_file.open(filename, std::ios::out);
         }
         string treeString;
         double score;
         readTreeString(*it);
         cntInitTree++;
-        if (it-initTreeStrings.begin() >= init_size)
+        if (params->xgphyOn)
+        {
+            if (it - initTreeStrings.begin() >= init_size)
             {
                 treeString = optimizeBranches(params->brlen_num_traversal);
                 countBranchOpt++;
-                if(vanvan_file.is_open())
-                vanvan_file << "Branch lengths optimized for tree " << cntInitTree << endl;
+                if (xgphy_file.is_open())
+                    xgphy_file << "Branch lengths optimized for tree " << cntInitTree << endl;
             }
-        else {
-            computeLogL();
-            treeString = getTreeString();
+            else
+            {
+                computeLogL();
+                treeString = getTreeString();
+            }
         }
         score = getCurScore();
 
-        if(vanvan_file.is_open())
-        vanvan_file << cntInitTree << ". Current init tree score: "<< score << endl;
+        if (xgphy_file.is_open())
+        {
+            xgphy_file << cntInitTree << ". Current init tree score: " << score << endl;
+            xgphy_file << "Tree before NNI: " << treeString << endl;
 
-        int nni_count = Params::getInstance().van_mode ? Params::getInstance().van_nni_search_count : 3;
-        for(int i = 1; i <= nni_count; i++) {
-            doNNISearch();
-            score = getCurScore();
-            if(vanvan_file.is_open())
-            vanvan_file << "Score after NNI" << i << " " <<": " << score << endl;
-        }
-
-        cout << "Result update treeset: " << candidateTrees.update(treeString,score) << endl;
-    
-        if (Params::getInstance().van_mode) {  
-            if (vanvan_file.is_open()) {
-                printTree(vanvan_file, 1);
-                vanvan_file.close();
-                cout << "Saved vanvan tree to " << filename << std::endl;
-            } else {
-                std::cerr << "Could not open file " << filename << " for writing." << std::endl;
+            int nni_count = Params::getInstance().xgphyOn ? Params::getInstance().xgphy_nni_search_count : 3;
+            double best_score = score;
+            string best_tree = treeString;
+            for (int i = 1; i <= nni_count; i++)
+            {
+                doTreePerturbation();
+                doNNISearch();
+                score = getCurScore();
+                if (xgphy_file.is_open())
+                {
+                    xgphy_file << "Score after NNI" << i << " " << ": " << score << endl;
+                    if (score > best_score)
+                    {
+                        best_score = score;
+                        best_tree = getTreeString();
+                        xgphy_file << "New best tree found after NNI" << i << endl;
+                    }
+                }
             }
+
+            cout << "Result update treeset: " << candidateTrees.update(best_tree, best_score) << endl;
+
+            xgphy_file << "Best tree after " << nni_count << " NNI rounds: " << best_tree << endl;
+            xgphy_file.close();
+            cout << "Saved xgphy tree to " << filename << std::endl;
+        }
+        else
+        {
+            std::cerr << "Could not open file " << filename << " for writing." << std::endl;
         }
     }
 
@@ -949,42 +967,44 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
     vector<string>::iterator it;
     int cntBestTree = 0;
     for (it = bestInitTrees.begin(); it != bestInitTrees.end(); it++) {
-        std::string filename = out_prefix + ".bestTree" + std::to_string(cntBestTree) + ".vanvan";
-        if (Params::getInstance().van_mode) {
-            vanvan_file.open(filename, std::ios::out);
+        std::string filename = out_prefix + ".bestTree" + std::to_string(cntBestTree) + ".xgphy";
+        if (Params::getInstance().xgphyOn) {
+            xgphy_file.open(filename, std::ios::out);
         }
         readTreeString(*it);
         cntBestTree++;
         cout << cntBestTree << endl;
         double score = getCurScore();
-        if(vanvan_file.is_open())
-        vanvan_file << "Initial score: " << score << endl;
+        if(xgphy_file.is_open())
+        xgphy_file << "Initial score: " << score << endl;
         string treeString ;
         if (it-initTreeStrings.begin() >= init_size)
         {
                 treeString = optimizeBranches(params->brlen_num_traversal);
-                if(vanvan_file.is_open())
-                vanvan_file << "Branch lengths optimized" << endl;
+                if(xgphy_file.is_open())
+                xgphy_file << "Branch lengths optimized" << endl;
         }
         else {
             computeLogL();
             treeString = getTreeString();
         }
-        if(vanvan_file.is_open())
-        vanvan_file << "Tree before NNI: " << treeString << endl;
-//        optimizeBranches();
-//        cout << "curScore: " << curScore << "  Tree before NNI: " << getTreeString() << endl;
-        if(vanvan_file.is_open())
-        vanvan_file << "curScore before NNI: " << score << endl;
+
+        if (xgphy_file.is_open())
+        {
+            xgphy_file << "Tree before NNI: " << treeString << endl;
+            xgphy_file << "curScore before NNI: " << score << endl;
+        }
+
         doNNISearch();
-        if(vanvan_file.is_open())
-        vanvan_file << "curScore after NNI: " << curScore << endl;
+
+        if(xgphy_file.is_open())
         treeString = getTreeString();
 
-        if(vanvan_file.is_open()) {
-            vanvan_file << "Tree after NNI: " << treeString << endl;
-            vanvan_file.close();
-            cout << "Saved vanvan best tree to " << filename << std::endl;
+        if(xgphy_file.is_open()) {
+            xgphy_file << "curScore after NNI: " << curScore << endl;
+            xgphy_file << "Tree after NNI: " << treeString << endl;
+            xgphy_file.close();
+            cout << "Saved xgphy best tree to " << filename << std::endl;
         }
         addTreeToCandidateSet(treeString, curScore, true, MPIHelper::getInstance().getProcessID());
         if (Params::getInstance().writeDistImdTrees)
@@ -2359,12 +2379,13 @@ double IQTree::doTreeSearch() {
     if (treesPerProc < 1 && params->numInitTrees > candidateTrees.size())
         treesPerProc = 1;
 
+    if(params->xgphyOn){
     cout << "Number of numNNITrees: " << params->numNNITrees << endl;
     cout << "Number of processes: " << MPIHelper::getInstance().getNumProcesses() << endl;
     cout << "Number of trees per process: " << treesPerProc << endl;
     cout << "Number of trees in candidate set: " << candidateTrees.size() << endl;
     cout << "Total number of trees to be generated: " << params->numInitTrees << endl;
-
+    }
     /* Initialize candidate tree set */
     if (!getCheckpoint()->getBool("finishedCandidateSet")) {
         initCandidateTreeSet(treesPerProc, params->numNNITrees);
