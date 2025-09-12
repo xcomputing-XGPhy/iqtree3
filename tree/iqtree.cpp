@@ -873,72 +873,84 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
     int countBranchOpt = 0;
      // If xgphy_mode, save result to a separate file
     std::ofstream xgphy_file;
+    std::ofstream xgphy_tree_file;
     std::string out_prefix = Params::getInstance().out_prefix ? Params::getInstance().out_prefix : "iqtree";
-    for (vector<string>::iterator it = initTreeStrings.begin(); it != initTreeStrings.end(); ++it) {
-        std::string filename = out_prefix + ".tree" + std::to_string(cntInitTree) + ".xgphy";
-        if (Params::getInstance().xgphyOn) {
+    for (vector<string>::iterator it = initTreeStrings.begin(); it != initTreeStrings.end(); ++it)
+    {
+        std::string filename = out_prefix + ".tree" + std::to_string(cntInitTree) + ".xgphy.log";
+        if (Params::getInstance().xgphyOn)
+        {
             xgphy_file.open(filename, std::ios::out);
+            xgphy_tree_file.open(out_prefix + ".tree" + std::to_string(cntInitTree) + ".xgphy.treefile", std::ios::out);
         }
         string treeString;
         double score;
         readTreeString(*it);
         cntInitTree++;
-        if (params->xgphyOn)
+        if (it - initTreeStrings.begin() >= init_size)
         {
-            if (it - initTreeStrings.begin() >= init_size)
-            {
-                treeString = optimizeBranches(params->brlen_num_traversal);
-                countBranchOpt++;
-                if (xgphy_file.is_open())
-                    xgphy_file << "Branch lengths optimized for tree " << cntInitTree << endl;
-            }
-            else
-            {
-                computeLogL();
-                treeString = getTreeString();
-            }
-        }
-        score = getCurScore();
-
-        if (xgphy_file.is_open())
-        {
-            xgphy_file << cntInitTree << ". Current init tree score: " << score << endl;
-            xgphy_file << "Tree before NNI: " << treeString << endl;
-
-            int nni_count = Params::getInstance().xgphyOn ? Params::getInstance().xgphy_nni_search_count : 3;
-            double best_score = score;
-            string best_tree = treeString;
-            for (int i = 1; i <= nni_count; i++)
-            {
-                doTreePerturbation();
-                doNNISearch();
-                score = getCurScore();
-                if (xgphy_file.is_open())
-                {
-                    xgphy_file << "Score after NNI" << i << " " << ": " << score << endl;
-                    if (score > best_score)
-                    {
-                        best_score = score;
-                        best_tree = getTreeString();
-                        xgphy_file << "New best tree found after NNI" << i << endl;
-                    }
-                }
-            }
-
-            cout << "Result update treeset: " << candidateTrees.update(best_tree, best_score) << endl;
-
-            xgphy_file << "Best tree after " << nni_count << " NNI rounds: " << best_tree << endl;
-            xgphy_file.close();
-            cout << "Saved xgphy tree to " << filename << std::endl;
+            treeString = optimizeBranches(params->brlen_num_traversal);
+            countBranchOpt++;
+            if (xgphy_file.is_open())
+                xgphy_file << "Branch lengths optimized for tree " << cntInitTree << endl;
         }
         else
         {
-            std::cerr << "Could not open file " << filename << " for writing." << std::endl;
+            computeLogL();
+            treeString = getTreeString();
+        }
+        score = getCurScore();
+        if (!params->xgphyOn)
+            candidateTrees.update(treeString, score);
+        else
+        {
+            if (xgphy_file.is_open())
+            {
+                xgphy_file << cntInitTree << ". Current init tree score: " << score << endl;
+                xgphy_file << "Tree before NNI: " << treeString << endl;
+
+                int nni_count = Params::getInstance().xgphyOn ? Params::getInstance().xgphy_nni_search_count : 3;
+                double best_score = score;
+                string best_tree = treeString;
+                double time_nni_start = getRealTime();
+                for (int i = 1; i <= nni_count; i++)
+                {
+                    doTreePerturbation();
+                    doNNISearch();
+                    score = getCurScore();
+                    if (xgphy_file.is_open())
+                    {
+                        xgphy_file << "Score after NNI" << i << " " << ": " << score << endl;
+                        if (score > best_score)
+                        {
+                            best_score = score;
+                            best_tree = getTreeString();
+                            xgphy_file << "New best tree found after NNI" << i << endl;
+                        }
+                    }
+                }
+
+                cout << "Result update treeset: " << candidateTrees.update(best_tree, best_score) << endl;
+
+                xgphy_file << "Best-fit model: " << params->model_name << endl;
+                xgphy_file << "Total number of iterations: " << stop_rule.getCurIt() << endl;
+                xgphy_file << "BEST SCORE FOUND: " << best_score << endl;
+                xgphy_file << "BEST TREE FOUND: " << best_tree << endl;
+                xgphy_file << "Total time for NNI search: " << getRealTime() - time_nni_start << " seconds" << endl;
+                xgphy_tree_file << best_tree << endl;
+                xgphy_tree_file.close();
+                xgphy_file.close();
+                cout << "Saved xgphy tree to " << filename << std::endl;
+            }
+            else
+            {
+                std::cerr << "Could not open file " << filename << " for writing." << std::endl;
+            }
+            cout << candidateTrees.size() << " unique trees added to candidate set. ";
+            cout << countBranchOpt << " trees had branch lengths optimized." << endl;
         }
     }
 
-    cout << candidateTrees.size() << " unique trees added to candidate set. ";
-    cout << countBranchOpt << " trees had branch lengths optimized." << endl;
     if (Params::getInstance().writeDistImdTrees)
         intermediateTrees.initTrees(candidateTrees);
 
@@ -973,6 +985,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
         }
         readTreeString(*it);
         cntBestTree++;
+        if(params->xgphyOn)
         cout << cntBestTree << endl;
         double score = getCurScore();
         if(xgphy_file.is_open())
