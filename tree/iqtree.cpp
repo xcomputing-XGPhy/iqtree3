@@ -886,6 +886,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
         double score;
         readTreeString(*it);
         string treeString = getTreeString();
+        string treeString = getTreeString();
         cntInitTree++;
         if (it - initTreeStrings.begin() >= init_size)
         {
@@ -907,6 +908,9 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
             if (xgphy_file.is_open())
             {
                 xgphy_file << cntInitTree << ". Current init tree score: " << score << endl;
+                xgphy_file << "Tree before NNI: \n" ;
+                printTree(xgphy_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
+                xgphy_file << endl;
                 xgphy_file << "Tree before NNI: \n" ;
                 printTree(xgphy_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
                 xgphy_file << endl;
@@ -940,6 +944,14 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
                     xgphy_file << "TREE WAS INSERTED\n";
                     insertTaxa(removed_seqs, twin_seqs);
                 }
+                addTreeToCandidateSet(best_tree, best_score, true, MPIHelper::getInstance().getProcessID());
+                
+                readTreeString(best_tree); // read back the best tree found
+
+                if(removed_seqs.size()> 0){
+                    xgphy_file << "TREE WAS INSERTED\n";
+                    insertTaxa(removed_seqs, twin_seqs);
+                }
                 xgphy_file << "Best-fit model: " << params->model_name << endl;
                 xgphy_file << "Total number of iterations: " << stop_rule.getCurIt() << endl;
                 xgphy_file << "BEST SCORE FOUND: " << getCurScore() << endl;
@@ -948,7 +960,15 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
                 xgphy_file << endl;
 
                 xgphy_file << "Number of branch in tree: " << (2 * leafNum - 3) << endl;
+                xgphy_file << "BEST SCORE FOUND: " << getCurScore() << endl;
+                xgphy_file << "BEST TREE FOUND: \n" ;
+                printTree(xgphy_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
+                xgphy_file << endl;
+
+                xgphy_file << "Number of branch in tree: " << (2 * leafNum - 3) << endl;
                 xgphy_file << "Total time for NNI search: " << getRealTime() - time_nni_start << " seconds" << endl;
+                printTree(xgphy_tree_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
+                //xgphy_tree_file << best_tree << endl;
                 printTree(xgphy_tree_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
                 //xgphy_tree_file << best_tree << endl;
                 xgphy_tree_file.close();
@@ -1020,6 +1040,9 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
             xgphy_file << "Tree before NNI: \n";
             printTree(xgphy_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
             xgphy_file << endl;
+            xgphy_file << "Tree before NNI: \n";
+            printTree(xgphy_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
+            xgphy_file << endl;
             xgphy_file << "curScore before NNI: " << score << endl;
         }
 
@@ -1030,6 +1053,9 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
 
         if(xgphy_file.is_open()) {
             xgphy_file << "curScore after NNI: " << curScore << endl;
+            xgphy_file << "Tree after NNI: \n"; 
+            printTree(xgphy_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
+            xgphy_file << endl;
             xgphy_file << "Tree after NNI: \n"; 
             printTree(xgphy_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
             xgphy_file << endl;
@@ -4455,7 +4481,7 @@ void IQTree::printBestCandidateTree() {
     setRootNode(params->root);
     printTree(tree_file_name.c_str(), WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
     if (verbose_mode >= VB_MED)
-        cout << "Best tree printed to " << tree_file_name << endl;
+        cout << "<IQTREE:printBestCandidateTree>" << "Best tree printed to " << tree_file_name << endl;
 }
 
 
