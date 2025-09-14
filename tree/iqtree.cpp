@@ -877,11 +877,11 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
     std::string out_prefix = Params::getInstance().out_prefix ? Params::getInstance().out_prefix : "iqtree";
     for (vector<string>::iterator it = initTreeStrings.begin(); it != initTreeStrings.end(); ++it)
     {
-        std::string filename = out_prefix + ".tree" + std::to_string(cntInitTree) + ".xgphy.log";
+        std::string filename = out_prefix + "_tree" + std::to_string(cntInitTree) + "_xgphy.log";
         if (Params::getInstance().xgphyOn)
         {
             xgphy_file.open(filename, std::ios::out);
-            xgphy_tree_file.open(out_prefix + ".tree" + std::to_string(cntInitTree) + ".xgphy.treefile", std::ios::out);
+            xgphy_tree_file.open(out_prefix + "_tree" + std::to_string(cntInitTree) + "_xgphy.treefile", std::ios::out);
         }
         double score;
         readTreeString(*it);
@@ -992,7 +992,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
     vector<string>::iterator it;
     int cntBestTree = 0;
     for (it = bestInitTrees.begin(); it != bestInitTrees.end(); it++) {
-        std::string filename = out_prefix + ".bestTree" + std::to_string(cntBestTree) + ".xgphy";
+        std::string filename = out_prefix + "_bestTreeInitTree" + std::to_string(cntBestTree) + "_xgphy.treefile";
         if (Params::getInstance().xgphyOn) {
             xgphy_file.open(filename, std::ios::out);
         }
