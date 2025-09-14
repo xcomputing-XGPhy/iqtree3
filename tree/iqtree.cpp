@@ -4435,7 +4435,7 @@ void IQTree::printResultTree(string suffix) {
     }
     printTree(tree_file_name.c_str(), WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
     if (verbose_mode >= VB_MED)
-        cout << "<IQTREE:printResultTree> "<<"Best tree printed to " << tree_file_name << endl;
+        cout <<"Best tree printed to " << tree_file_name << endl;
     setRootNode(params->root, false);
 }
 
