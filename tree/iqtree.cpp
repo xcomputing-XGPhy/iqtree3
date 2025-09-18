@@ -886,7 +886,6 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
         double score;
         readTreeString(*it);
         string treeString = getTreeString();
-        string treeString = getTreeString();
         cntInitTree++;
         if (it - initTreeStrings.begin() >= init_size)
         {
