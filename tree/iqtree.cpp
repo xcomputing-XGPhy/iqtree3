@@ -946,6 +946,7 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
                 addTreeToCandidateSet(best_tree, best_score, true, MPIHelper::getInstance().getProcessID());
                 
                 readTreeString(best_tree); // read back the best tree found
+                setCurScore(best_score);
 
                 if(removed_seqs.size()> 0){
                     xgphy_file << "TREE WAS INSERTED\n";
