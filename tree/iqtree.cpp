@@ -960,17 +960,8 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
                 xgphy_file << endl;
 
                 xgphy_file << "Number of branch in tree: " << (2 * leafNum - 3) << endl;
-                xgphy_file << "BEST SCORE FOUND: " << getCurScore() << endl;
-                xgphy_file << "BEST TREE FOUND: \n" ;
-                printTree(xgphy_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
-                xgphy_file << endl;
-
-                xgphy_file << "Number of branch in tree: " << (2 * leafNum - 3) << endl;
                 xgphy_file << "Total time for NNI search: " << getRealTime() - time_nni_start << " seconds" << endl;
                 printTree(xgphy_tree_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
-                //xgphy_tree_file << best_tree << endl;
-                printTree(xgphy_tree_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
-                //xgphy_tree_file << best_tree << endl;
                 xgphy_tree_file.close();
                 xgphy_file.close();
                 cout << "Saved xgphy tree to " << filename << std::endl;
