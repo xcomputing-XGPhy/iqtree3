@@ -13,7 +13,7 @@ test_scripts/iqtree_test
 tags
 test_scripts/iqtree_test_cmds.txt
 pllrepo/
-build/
+build/*
 cmake-build-debug/
 /Default-clang
 .idea/
