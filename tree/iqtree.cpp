@@ -835,9 +835,10 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
         int pos = addTreeToCandidateSet(curParsTree, -DBL_MAX, false, MPIHelper::getInstance().getProcessID());
         // if a duplicated tree is generated, then randomize the tree
         if (pos == -1) {
+            //cout << "This tree is already in set \n";
             readTreeString(curParsTree);
             doRandomNNIs();
-//            generateRandomTree(YULE_HARDING);
+//          generateRandomTree(YULE_HARDING);
             wrapperFixNegativeBranch(true);
             string randTree = getTreeString();
 //            if (isMixlen()) {
@@ -845,12 +846,13 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
 //            } else {
 //                curScore = -DBL_MAX;
 //            }
+            //if(randTree != curParsTree) cout << "Try to add another randtree\n";
             addTreeToCandidateSet(randTree, -DBL_MAX, false, MPIHelper::getInstance().getProcessID());
         }
-       
+    //    cout << "The " << treeNr << " trees: candidate tree size is : " << candidateTrees.size() << "\n";
     }
 
-
+    // cout << "After add " << nParTrees << "trees : candidate tree set have: " << candidateTrees.size() << " trees \n";
     if (nParTrees > 0)
         cout << getRealTime() - startTime << " second" << endl;
 
@@ -910,9 +912,6 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
                 xgphy_file << "Tree before NNI: \n" ;
                 printTree(xgphy_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
                 xgphy_file << endl;
-                xgphy_file << "Tree before NNI: \n" ;
-                printTree(xgphy_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
-                xgphy_file << endl;
 
                 int nni_count = Params::getInstance().xgphyOn ? Params::getInstance().xgphy_nni_search_count : 3;
                 double best_score = score;
@@ -935,14 +934,6 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
                     }
                 }
 
-                addTreeToCandidateSet(best_tree, best_score, true, MPIHelper::getInstance().getProcessID());
-                
-                readTreeString(best_tree); // read back the best tree found
-
-                if(removed_seqs.size()> 0){
-                    xgphy_file << "TREE WAS INSERTED\n";
-                    insertTaxa(removed_seqs, twin_seqs);
-                }
                 addTreeToCandidateSet(best_tree, best_score, true, MPIHelper::getInstance().getProcessID());
                 
                 readTreeString(best_tree); // read back the best tree found
@@ -972,6 +963,90 @@ void IQTree::initCandidateTreeSet(int nParTrees, int nNNITrees) {
             }
             cout << candidateTrees.size() << " unique trees added to candidate set. ";
             cout << countBranchOpt << " trees had branch lengths optimized." << endl;
+        }
+    }
+    
+    if(params->xgphyOn)
+    {
+        if(candidateTrees.size() < nParTrees + init_size) {
+            cout << "Do not have enough initial tree\n Trying to create enough output file\n";
+            int nMissingTrees = nParTrees + init_size - candidateTrees.size();
+            cout << "Add " << nMissingTrees << "files\n";
+            for(int nTree = 1; nTree <= nMissingTrees; nTree++)
+            {
+                std::string filename = out_prefix + "_tree" + std::to_string(cntInitTree) + "_xgphy.log";
+                if (Params::getInstance().xgphyOn)
+                {
+                    xgphy_file.open(filename, std::ios::out);
+                    xgphy_tree_file.open(out_prefix + "_tree" + std::to_string(cntInitTree) + "_xgphy.treefile", std::ios::out);
+                }
+                cntInitTree++;
+                string curRandTree;
+                generateRandomTree(YULE_HARDING);
+                wrapperFixNegativeBranch(true);
+                curRandTree = getTreeString();
+                // cout << nTree << "new rand trees created\n";
+                // cout << "Force to insert\n";
+                double score = getCurScore();
+                string treeString = getTreeString();
+                if (xgphy_file.is_open())
+                {
+                    xgphy_file << cntInitTree << ". Current init tree score: " << score << endl;
+                    xgphy_file << "Tree before NNI: \n";
+                    printTree(xgphy_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
+                    xgphy_file << endl;
+
+                    int nni_count = Params::getInstance().xgphyOn ? Params::getInstance().xgphy_nni_search_count : 3;
+                    double best_score = score;
+                    string best_tree = treeString;
+                    double time_nni_start = getRealTime();
+                    for (int i = 1; i <= nni_count; i++)
+                    {
+                        doTreePerturbation();
+                        doNNISearch();
+                        score = getCurScore();
+                        if (xgphy_file.is_open())
+                        {
+                            xgphy_file << "Score after NNI" << i << " " << ": " << score << endl;
+                            if (score > best_score)
+                            {
+                                best_score = score;
+                                best_tree = getTreeString();
+                                xgphy_file << "New best tree found after NNI" << i << endl;
+                            }
+                        }
+                    }
+
+                    //addTreeToCandidateSet(best_tree, best_score, true, MPIHelper::getInstance().getProcessID());
+
+                    readTreeString(best_tree); // read back the best tree found
+                    setCurScore(best_score);
+                    if (removed_seqs.size() > 0)
+                    {
+                        xgphy_file << "TREE WAS INSERTED\n";
+                        insertTaxa(removed_seqs, twin_seqs);
+                    }
+                    xgphy_file << "Best-fit model: " << params->model_name << endl;
+                    xgphy_file << "Total number of iterations: " << stop_rule.getCurIt() << endl;
+                    xgphy_file << "BEST SCORE FOUND: " << getCurScore() << endl;
+                    xgphy_file << "BEST TREE FOUND: \n";
+                    printTree(xgphy_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
+                    xgphy_file << endl;
+
+                    xgphy_file << "Number of branch in tree: " << (2 * leafNum - 3) << endl;
+                    xgphy_file << "Total time for NNI search: " << getRealTime() - time_nni_start << " seconds" << endl;
+                    printTree(xgphy_tree_file, WT_BR_LEN | WT_BR_LEN_FIXED_WIDTH | WT_SORT_TAXA | WT_NEWLINE);
+                    xgphy_tree_file.close();
+                    xgphy_file.close();
+                    cout << "Saved xgphy tree to " << filename << std::endl;
+                }
+                else
+                {
+                    std::cerr << "Could not open file " << filename << " for writing." << std::endl;
+                }
+                //candidateTrees.insertRandTree(curRandTree, -DBL_MAX);
+                //cout << "Current candidateTree set size is: " << candidateTrees.size() << "\n";
+            }
         }
     }
 
